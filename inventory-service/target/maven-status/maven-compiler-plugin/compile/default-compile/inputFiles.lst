@@ -1,0 +1,12 @@
+/Users/palak2/Downloads/stationery-management/inventory-service/src/main/java/com/stationery/inventory/dto/StationeryItemResponse.java
+/Users/palak2/Downloads/stationery-management/inventory-service/src/main/java/com/stationery/inventory/InventoryServiceApplication.java
+/Users/palak2/Downloads/stationery-management/inventory-service/src/main/java/com/stationery/inventory/exception/GlobalExceptionHandler.java
+/Users/palak2/Downloads/stationery-management/inventory-service/src/main/java/com/stationery/inventory/repository/StationeryItemRepository.java
+/Users/palak2/Downloads/stationery-management/inventory-service/src/main/java/com/stationery/inventory/service/InventoryService.java
+/Users/palak2/Downloads/stationery-management/inventory-service/src/main/java/com/stationery/inventory/exception/ErrorResponse.java
+/Users/palak2/Downloads/stationery-management/inventory-service/src/main/java/com/stationery/inventory/model/Category.java
+/Users/palak2/Downloads/stationery-management/inventory-service/src/main/java/com/stationery/inventory/exception/InsufficientStockException.java
+/Users/palak2/Downloads/stationery-management/inventory-service/src/main/java/com/stationery/inventory/model/StationeryItem.java
+/Users/palak2/Downloads/stationery-management/inventory-service/src/main/java/com/stationery/inventory/dto/StationeryItemRequest.java
+/Users/palak2/Downloads/stationery-management/inventory-service/src/main/java/com/stationery/inventory/exception/ResourceNotFoundException.java
+/Users/palak2/Downloads/stationery-management/inventory-service/src/main/java/com/stationery/inventory/controller/InventoryController.java

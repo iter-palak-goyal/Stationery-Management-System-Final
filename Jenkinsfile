@@ -22,6 +22,7 @@ pipeline {
     environment {
         IMAGE_TAG        = "${env.BUILD_NUMBER}"
         COMPOSE_PROJECT  = 'sms'
+        PATH             = "/usr/local/bin:${env.PATH}"
     }
 
     options {

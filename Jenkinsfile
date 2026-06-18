@@ -108,7 +108,7 @@ pipeline {
                     steps {
                         dir('auth-service') {
                             echo 'Running Auth Service tests...'
-                            sh 'mvn test -B'
+                            sh 'mvn test -B -Djacoco.skip=true'
                         }
                     }
                     post {
@@ -122,7 +122,7 @@ pipeline {
                     steps {
                         dir('inventory-service') {
                             echo 'Running Inventory Service tests...'
-                            sh 'mvn test -B'
+                            sh 'mvn test -B -Djacoco.skip=true'
                         }
                     }
                     post {
@@ -136,7 +136,7 @@ pipeline {
                     steps {
                         dir('request-service') {
                             echo 'Running Request Service tests...'
-                            sh 'mvn test -B'
+                            sh 'mvn test -B -Djacoco.skip=true'
                         }
                     }
                     post {

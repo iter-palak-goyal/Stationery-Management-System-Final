@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axiosConfig';
+import { useAuth } from '../context/AuthContext';
 import './Inventory.css';
 
 const Inventory = () => {
+  const { isAdmin } = useAuth();
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
@@ -47,6 +49,18 @@ const Inventory = () => {
     await loadItems();
   };
 
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this stationery item? This action cannot be undone.')) {
+      try {
+        await api.delete(`/api/inventory/${id}`);
+        setError('');
+        loadItems();
+      } catch (err) {
+        setError('Failed to delete item. It might be referenced in active requests.');
+      }
+    }
+  };
+
   return (
     <div className="page-card">
       <div className="page-header">
@@ -54,11 +68,13 @@ const Inventory = () => {
           <h1>Inventory</h1>
           <p className="page-subtitle">Browse stationery items and search by name.</p>
         </div>
-        <div className="page-actions">
-          <Link to="/inventory/add" className="btn btn-primary">
-            Add New Item
-          </Link>
-        </div>
+        {isAdmin() && (
+          <div className="page-actions">
+            <Link to="/inventory/add" className="btn btn-primary">
+              Add New Item
+            </Link>
+          </div>
+        )}
       </div>
 
       <form className="page-search" onSubmit={handleSearch}>
@@ -102,9 +118,18 @@ const Inventory = () => {
                   <td>{item.unit}</td>
                   <td>{item.description || '—'}</td>
                   <td>
-                    <Link to={`/inventory/edit/${item.id}`} className="action-link">
-                      Edit
-                    </Link>
+                    {isAdmin() ? (
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <Link to={`/inventory/edit/${item.id}`} className="btn btn-sm btn-secondary">
+                          Edit
+                        </Link>
+                        <button onClick={() => handleDelete(item.id)} className="btn btn-sm btn-danger">
+                          Delete
+                        </button>
+                      </div>
+                    ) : (
+                      '—'
+                    )}
                   </td>
                 </tr>
               ))

@@ -51,7 +51,14 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
     private static final List<String> OPEN_API_ENDPOINTS = List.of(
             "/api/auth/login",
             "/api/auth/register",
-            "/api/auth/validate"
+            "/api/auth/validate",
+            "/v3/api-docs",
+            "/swagger-ui",
+            "/swagger-resources",
+            "/webjars",
+            "/api/auth/v3/api-docs",
+            "/api/inventory/v3/api-docs",
+            "/api/requests/v3/api-docs"
     );
 
     @Value("${jwt.secret:stationeryManagementSecretKey2024StationeryApp}")

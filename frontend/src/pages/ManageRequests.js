@@ -8,6 +8,10 @@ const ManageRequests = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  
+  // Rejection modal states
+  const [rejectingId, setRejectingId] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   const loadRequests = async () => {
     setLoading(true);
@@ -32,17 +36,38 @@ const ManageRequests = () => {
   const updateRequest = async (id, action) => {
     setMessage('');
     setError('');
+    if (action === 'reject') {
+      setRejectingId(id);
+      setRejectionReason('');
+      return;
+    }
     try {
       const url = `/api/requests/${id}/${action}`;
-      if (action === 'reject') {
-        await api.put(url, { rejectionReason: 'Rejected by admin' });
-      } else {
-        await api.put(url);
-      }
+      await api.put(url);
       setMessage(`Request ${action}ed successfully.`);
       loadRequests();
     } catch (err) {
       setError(`Failed to ${action} request.`);
+    }
+  };
+
+  const handleRejectSubmit = async (e) => {
+    e.preventDefault();
+    if (!rejectionReason.trim()) {
+      setError('Rejection reason is required.');
+      return;
+    }
+    setMessage('');
+    setError('');
+    try {
+      const url = `/api/requests/${rejectingId}/reject`;
+      await api.put(url, { rejectionReason });
+      setMessage(`Request rejected successfully.`);
+      setRejectingId(null);
+      setRejectionReason('');
+      loadRequests();
+    } catch (err) {
+      setError(`Failed to reject request.`);
     }
   };
 
@@ -90,7 +115,11 @@ const ManageRequests = () => {
                   <td>{request.id}</td>
                   <td>{request.requestId}</td>
                   <td>{request.studentUsername}</td>
-                  <td>{request.status}</td>
+                  <td>
+                    <span className={`status-badge ${request.status.toLowerCase()}`}>
+                      {request.status}
+                    </span>
+                  </td>
                   <td>{request.items?.map((item) => `${item.itemName} x${item.quantity}`).join(', ')}</td>
                   <td className="action-cell">
                     {request.status === 'PENDING' && (
@@ -122,6 +151,40 @@ const ManageRequests = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Rejection Modal overlay */}
+      {rejectingId && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <h2 className="modal-title">Reject Request</h2>
+            <p className="modal-subtitle">Please specify the reason for rejecting this request.</p>
+            <form onSubmit={handleRejectSubmit} className="modal-form">
+              <textarea
+                placeholder="Type rejection reason here (e.g. Budget limit exceeded, Item discontinued)..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                required
+                autoFocus
+              />
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setRejectingId(null);
+                    setRejectionReason('');
+                  }}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-danger">
+                  Reject Request
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

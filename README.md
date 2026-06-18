@@ -1,56 +1,143 @@
-# Stationery Management System - Interview Guide & Documentation
+# Stationery Management System - Complete Developer Manual & Documentation
 
-## What is this project?
-This is a web application that helps a college or organization manage its stationery (like pens, paper, and notebooks). 
-- **Students/Employees** can log in and request stationery.
-- **Admins/Managers** can log in, review requests, and approve or reject them.
-- **The System** keeps track of how many items are left in stock and warns admins when stock is low.
+This is a microservices-based web application designed to help a college or organization manage its stationery inventory (such as pens, papers, and desk accessories).
 
-## What does "Microservices Architecture" mean here?
-Instead of building one massive program that does everything (which is called a Monolith), we built several smaller, independent programs that talk to each other. These smaller programs are called "Microservices." 
+---
 
-Why do this? 
-1. If the "Request Service" crashes, students can still log in and view inventory. 
-2. It's easier for different teams to work on different parts of the code.
-3. We can run multiple copies of a heavy service (like the Request Service) without duplicating the lighter ones.
+## 🏗️ Architecture & Request Flow
 
-## The Architecture Explained in Simple Terms
-Imagine our application is a restaurant.
+The system is built on a distributed microservices pattern. All service settings are centralized, services are auto-discovered, and request routing is secured at the gateway level.
 
-1. **Frontend (React)**: This is the menu and the waiter. It is what the user interacts with on their web browser.
-2. **API Gateway**: This is the host at the front door of the restaurant. When the frontend asks for something, it goes to the API Gateway first. The Gateway checks their ID (JWT Token) and then directs their request to the correct kitchen station.
-3. **Eureka Server (Service Discovery)**: This is the restaurant's internal phonebook. When a microservice starts up, it registers itself here. That way, the API Gateway knows exactly where to send requests, even if the services change servers or IP addresses.
-4. **Config Server**: This is the master recipe book. Instead of every microservice having its own settings file, they all pull their settings (like database passwords) from this central server.
-5. **Auth Service**: This is the security guard. It handles logins, creates accounts, and gives users a digital wristband (JWT Token) so they don't have to keep entering their password.
-6. **Inventory Service**: This is the stockroom manager. It handles adding new items, counting how many pens are left, and updating stock.
-7. **Request Service**: This is the order ticket manager. It handles creating requests, and allows admins to approve or reject them.
-8. **MySQL Databases**: Each service (Auth, Inventory, Request) has its own separate database. We don't share one big database because if one service goes down or locks the database, we don't want it to break the others. This makes them truly independent.
+```mermaid
+graph TD
+    Client[React Frontend :3000] -->|HTTP Requests| Gateway[API Gateway :8090]
+    Gateway -->|Checks JWT & routes| Eureka[Eureka Server :8761]
+    Gateway -->|Forward Auth| Auth[Auth Service :8081]
+    Gateway -->|Forward Inventory| Inv[Inventory Service :8082]
+    Gateway -->|Forward Requests| Req[Request Service :8083]
+    
+    Auth -->|Fetch Config| Config[Config Server :8888]
+    Inv -->|Fetch Config| Config
+    Req -->|Fetch Config| Config
+    
+    Req -.->|Feign Client Lookup| Auth
+    Req -.->|Feign Client Deduct| Inv
+    
+    Auth -->|Read/Write| AuthDB[(MySQL: auth_db)]
+    Inv -->|Read/Write| InvDB[(MySQL: inventory_db)]
+    Req -->|Read/Write| ReqDB[(MySQL: request_db)]
+```
 
-## How does Security Work? (JWT)
-We use JSON Web Tokens (JWT). When a user logs in with a correct username and password, the Auth Service gives them a long string of characters (the token). 
-For the next 24 hours, the user's browser sends this token with every request. The API Gateway checks the token to see who the user is and if they are an ADMIN or a STUDENT. Since the token itself contains the user's role, the server doesn't need to look up their role in the database every time they click a button. This makes the app very fast and "stateless".
+### Infrastructure Summary
+1. **Frontend (React):** The client application allowing students to request items and admins to manage inventory and approvals.
+2. **API Gateway (Spring Cloud Gateway):** Intercepts all traffic. Validates JWT credentials using a custom `JwtAuthFilter` and appends identity headers (`X-User-Name`, `X-User-Role`) before forwarding requests downstream.
+3. **Eureka Server (Service Discovery):** Serves as the service directory, allowing microservices to discover and invoke each other dynamically.
+4. **Config Server (Spring Cloud Config):** Holds environment-specific properties (`default`, `dev`, `test`, `prod`) from a native file system directory.
+5. **MySQL Databases:** Each microservice owns its separate database instance to ensure true independence.
 
-## How does the CI/CD Pipeline work? (Jenkins)
-CI/CD stands for Continuous Integration and Continuous Deployment.
-We have a file called Jenkinsfile. Whenever a developer pushes new code, Jenkins acts like an automated robot worker:
-1. It downloads the new code.
-2. It builds all the Java services and the React frontend.
-3. It runs automated tests (using Mockito) to ensure no one broke existing features.
-4. It packages the code into Docker containers (like standard shipping boxes).
-5. It deploys the new containers so users can see the updates immediately.
+---
 
-## How to run the project locally
-Since we use Docker, running the project is incredibly simple. You do not need to install Java, Node.js, or MySQL manually.
+## 🗄️ Database Design (Entity Relationship Diagram)
 
-1. Open your terminal in the project folder.
-2. Run the command: docker-compose up --build -d
-3. Docker will automatically download the databases, compile the Java code, build the React code, and start everything in the correct order.
-4. Open your browser and go to http://localhost:3000
+Each service manages its tables independently. Relational mapping is managed inside the respective Java model classes.
 
-## Technologies Used
-- Frontend: React.js
-- Backend Framework: Java Spring Boot
-- Microservices tools: Spring Cloud (Eureka, Config, Gateway)
-- Database: MySQL
-- Testing: JUnit and Mockito
-- Deployment: Docker, Docker Compose, Jenkins
+```mermaid
+erDiagram
+    USERS {
+        Long id PK "Auto Increment"
+        String username "Unique"
+        String email "Unique"
+        String password "BCrypt Hash"
+        String role "ADMIN or STUDENT"
+        LocalDateTime created_at
+        LocalDateTime updated_at
+    }
+    STATIONERY_ITEMS {
+        Long id PK "Auto Increment"
+        String name
+        String category
+        String unit "BOX, PACK, REAM"
+        Integer available_quantity
+        Integer minimum_quantity
+        String description
+        LocalDateTime created_at
+        LocalDateTime updated_at
+    }
+    STATIONERY_REQUESTS {
+        Long id PK "Auto Increment"
+        String request_id UK "UUID"
+        String student_username
+        String status "PENDING, APPROVED, REJECTED, FULFILLED"
+        String rejection_reason
+        String admin_username
+        LocalDateTime created_at
+        LocalDateTime updated_at
+    }
+    REQUEST_ITEMS {
+        Long id PK "Auto Increment"
+        Long item_id FK "References Stationery Item"
+        String item_name
+        Integer quantity
+        Long request_id FK "References Stationery Request"
+    }
+    STATIONERY_REQUESTS ||--o{ REQUEST_ITEMS : "contains"
+```
+
+---
+
+## ⚙️ Environment Configurations
+
+The system supports environment-specific profile properties (Dev, Test, Prod) managed through the Centralized Config Server.
+
+| Profile | Target Database | Schema Strategy | Details |
+| :--- | :--- | :--- | :--- |
+| **`default` / `docker`** | `mysql:3306` | `update` (auto-update) | Default setting for local docker-compose setup. |
+| **`dev`** | `localhost:3306` | `update` (auto-update) | For local developer workspace; features verbose SQL logging. |
+| **`test`** | `localhost:3306/*_test` | `create-drop` (recreates) | For unit and integration tests; minimal logging. |
+| **`prod`** | Production Database | `validate` (strict check) | Strict schema check; credentials and keys injected via environment variables. |
+
+Profile files can be found in the [config-server resources](file:///Users/palak2/Downloads/stationery-management/config-server/src/main/resources/configs).
+
+---
+
+## 📄 API & Endpoint Documentation
+
+The API contract details are documented in the project root: **[api-docs.md](file:///Users/palak2/Downloads/stationery-management/api-docs.md)**.
+
+### Swagger UI & OpenAPI Specification
+Each microservice is equipped with **Springdoc OpenAPI**, exposing live documentation.
+* **Auth Service Docs:** `http://localhost:8090/api/auth/v3/api-docs` (Swagger UI: `http://localhost:8090/api/auth/swagger-ui.html`)
+* **Inventory Service Docs:** `http://localhost:8090/api/inventory/v3/api-docs` (Swagger UI: `http://localhost:8090/api/inventory/swagger-ui.html`)
+* **Request Service Docs:** `http://localhost:8090/api/requests/v3/api-docs` (Swagger UI: `http://localhost:8090/api/requests/swagger-ui.html`)
+
+*Note: Access to these endpoints is explicitly bypassed in the Gateway filters and Spring Security to enable public inspection.*
+
+---
+
+## 🚀 Running the Project
+
+### Prerequisites
+* Docker and Docker Compose installed.
+* Maven 3.9+ and JDK 17 (if running microservices individually).
+
+### Local Quickstart (Docker Compose)
+1. Open your terminal in the root project folder.
+2. Build and run the docker composition:
+   ```bash
+   docker-compose up --build -d
+   ```
+3. Open your browser and go to `http://localhost:3000` to interact with the React interface.
+4. **Seed Credentials:**
+   * **Admin Console:** Log in with `admin` / `password`.
+   * **Student Portal:** Log in with `student` / `password`.
+
+---
+
+## 🤖 CI/CD Pipeline (Jenkins)
+The automated pipeline config is defined in the [Jenkinsfile](file:///Users/palak2/Downloads/stationery-management/Jenkinsfile). It executes the following stages sequentially upon code push:
+1. **Checkout:** Clones the code.
+2. **Build Backend Services:** Runs Parallel Maven compilation (`mvn clean package -DskipTests`).
+3. **Run Tests:** Triggers JUnit/Mockito test suites across all modules and aggregates reports.
+4. **Build Frontend:** Compiles the React SPA using `npm run build`.
+5. **Docker Build:** Builds and tags docker containers for all 7 project services.
+6. **Deploy:** Performs rolling docker updates in the deployment environment.

@@ -41,3 +41,13 @@ spring:
             allowedHeaders: "*"
             allowCredentials: false
             maxAge: 3600
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: Auth Service
+        url: /api/auth/v3/api-docs
+      - name: Inventory Service
+        url: /api/inventory/v3/api-docs
+      - name: Request Service
+        url: /api/requests/v3/api-docs

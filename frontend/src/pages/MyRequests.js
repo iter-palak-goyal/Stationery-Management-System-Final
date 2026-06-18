@@ -58,7 +58,7 @@ const MyRequests = () => {
             <tr>
               <th>ID</th>
               <th>Request ID</th>
-              <th>Status</th>
+              <th>Status / Reason</th>
               <th>Items</th>
               <th>Admin</th>
               <th>Updated</th>
@@ -70,7 +70,16 @@ const MyRequests = () => {
                 <tr key={request.id}>
                   <td>{request.id}</td>
                   <td>{request.requestId}</td>
-                  <td>{request.status}</td>
+                  <td>
+                    <span className={`status-badge ${request.status.toLowerCase()}`}>
+                      {request.status}
+                    </span>
+                    {request.status === 'REJECTED' && request.rejectionReason && (
+                      <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#f87171', maxWidth: '250px', lineBreak: 'anywhere' }}>
+                        <strong>Reason:</strong> {request.rejectionReason}
+                      </div>
+                    )}
+                  </td>
                   <td>{request.items?.map((item) => `${item.itemName} x${item.quantity}`).join(', ')}</td>
                   <td>{request.adminUsername || '—'}</td>
                   <td>{request.updatedAt ? new Date(request.updatedAt).toLocaleString() : '—'}</td>

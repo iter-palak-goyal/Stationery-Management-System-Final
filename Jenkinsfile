@@ -20,8 +20,6 @@ pipeline {
     }
 
     environment {
-        DOCKER_REGISTRY  = credentials('docker-registry-url')
-        DOCKER_CREDS     = credentials('docker-registry-creds')
         IMAGE_TAG        = "${env.BUILD_NUMBER}"
         COMPOSE_PROJECT  = 'sms'
     }
@@ -186,83 +184,52 @@ pipeline {
                 stage('Docker: Config Server') {
                     steps {
                         echo 'Building Config Server image...'
-                        sh "docker build -t ${DOCKER_REGISTRY}/sms-config-server:${IMAGE_TAG} ./config-server"
-                        sh "docker tag ${DOCKER_REGISTRY}/sms-config-server:${IMAGE_TAG} ${DOCKER_REGISTRY}/sms-config-server:latest"
+                        sh "docker build -t local/sms-config-server:${IMAGE_TAG} ./config-server"
+                        sh "docker tag local/sms-config-server:${IMAGE_TAG} local/sms-config-server:latest"
                     }
                 }
                 stage('Docker: Eureka Server') {
                     steps {
                         echo 'Building Eureka Server image...'
-                        sh "docker build -t ${DOCKER_REGISTRY}/sms-eureka-server:${IMAGE_TAG} ./eureka-server"
-                        sh "docker tag ${DOCKER_REGISTRY}/sms-eureka-server:${IMAGE_TAG} ${DOCKER_REGISTRY}/sms-eureka-server:latest"
+                        sh "docker build -t local/sms-eureka-server:${IMAGE_TAG} ./eureka-server"
+                        sh "docker tag local/sms-eureka-server:${IMAGE_TAG} local/sms-eureka-server:latest"
                     }
                 }
                 stage('Docker: API Gateway') {
                     steps {
                         echo 'Building API Gateway image...'
-                        sh "docker build -t ${DOCKER_REGISTRY}/sms-api-gateway:${IMAGE_TAG} ./api-gateway"
-                        sh "docker tag ${DOCKER_REGISTRY}/sms-api-gateway:${IMAGE_TAG} ${DOCKER_REGISTRY}/sms-api-gateway:latest"
+                        sh "docker build -t local/sms-api-gateway:${IMAGE_TAG} ./api-gateway"
+                        sh "docker tag local/sms-api-gateway:${IMAGE_TAG} local/sms-api-gateway:latest"
                     }
                 }
                 stage('Docker: Auth Service') {
                     steps {
                         echo 'Building Auth Service image...'
-                        sh "docker build -t ${DOCKER_REGISTRY}/sms-auth-service:${IMAGE_TAG} ./auth-service"
-                        sh "docker tag ${DOCKER_REGISTRY}/sms-auth-service:${IMAGE_TAG} ${DOCKER_REGISTRY}/sms-auth-service:latest"
+                        sh "docker build -t local/sms-auth-service:${IMAGE_TAG} ./auth-service"
+                        sh "docker tag local/sms-auth-service:${IMAGE_TAG} local/sms-auth-service:latest"
                     }
                 }
                 stage('Docker: Inventory Service') {
                     steps {
                         echo 'Building Inventory Service image...'
-                        sh "docker build -t ${DOCKER_REGISTRY}/sms-inventory-service:${IMAGE_TAG} ./inventory-service"
-                        sh "docker tag ${DOCKER_REGISTRY}/sms-inventory-service:${IMAGE_TAG} ${DOCKER_REGISTRY}/sms-inventory-service:latest"
+                        sh "docker build -t local/sms-inventory-service:${IMAGE_TAG} ./inventory-service"
+                        sh "docker tag local/sms-inventory-service:${IMAGE_TAG} local/sms-inventory-service:latest"
                     }
                 }
                 stage('Docker: Request Service') {
                     steps {
                         echo 'Building Request Service image...'
-                        sh "docker build -t ${DOCKER_REGISTRY}/sms-request-service:${IMAGE_TAG} ./request-service"
-                        sh "docker tag ${DOCKER_REGISTRY}/sms-request-service:${IMAGE_TAG} ${DOCKER_REGISTRY}/sms-request-service:latest"
+                        sh "docker build -t local/sms-request-service:${IMAGE_TAG} ./request-service"
+                        sh "docker tag local/sms-request-service:${IMAGE_TAG} local/sms-request-service:latest"
                     }
                 }
                 stage('Docker: Frontend') {
                     steps {
                         echo 'Building Frontend image...'
-                        sh "docker build -t ${DOCKER_REGISTRY}/sms-frontend:${IMAGE_TAG} ./frontend"
-                        sh "docker tag ${DOCKER_REGISTRY}/sms-frontend:${IMAGE_TAG} ${DOCKER_REGISTRY}/sms-frontend:latest"
+                        sh "docker build -t local/sms-frontend:${IMAGE_TAG} ./frontend"
+                        sh "docker tag local/sms-frontend:${IMAGE_TAG} local/sms-frontend:latest"
                     }
                 }
-            }
-        }
-
-        // ──────────────────────────────────────────────────
-        // Stage 7: Push Docker Images to Registry
-        // ──────────────────────────────────────────────────
-        stage('Docker Push') {
-            steps {
-                echo 'Pushing Docker images to registry...'
-                sh "docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW} ${DOCKER_REGISTRY}"
-
-                sh "docker push ${DOCKER_REGISTRY}/sms-config-server:${IMAGE_TAG}"
-                sh "docker push ${DOCKER_REGISTRY}/sms-config-server:latest"
-
-                sh "docker push ${DOCKER_REGISTRY}/sms-eureka-server:${IMAGE_TAG}"
-                sh "docker push ${DOCKER_REGISTRY}/sms-eureka-server:latest"
-
-                sh "docker push ${DOCKER_REGISTRY}/sms-api-gateway:${IMAGE_TAG}"
-                sh "docker push ${DOCKER_REGISTRY}/sms-api-gateway:latest"
-
-                sh "docker push ${DOCKER_REGISTRY}/sms-auth-service:${IMAGE_TAG}"
-                sh "docker push ${DOCKER_REGISTRY}/sms-auth-service:latest"
-
-                sh "docker push ${DOCKER_REGISTRY}/sms-inventory-service:${IMAGE_TAG}"
-                sh "docker push ${DOCKER_REGISTRY}/sms-inventory-service:latest"
-
-                sh "docker push ${DOCKER_REGISTRY}/sms-request-service:${IMAGE_TAG}"
-                sh "docker push ${DOCKER_REGISTRY}/sms-request-service:latest"
-
-                sh "docker push ${DOCKER_REGISTRY}/sms-frontend:${IMAGE_TAG}"
-                sh "docker push ${DOCKER_REGISTRY}/sms-frontend:latest"
             }
         }
 
@@ -290,7 +257,6 @@ pipeline {
     post {
         always {
             echo 'Cleaning up workspace...'
-            sh "docker logout ${DOCKER_REGISTRY} || exit 0"
             cleanWs()
         }
         success {

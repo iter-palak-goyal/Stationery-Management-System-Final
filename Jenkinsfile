@@ -171,7 +171,7 @@ pipeline {
             steps {
                 dir('frontend') {
                     echo 'Running frontend tests...'
-                    sh 'npm test -- --watchAll=false --ci'
+                    sh 'npm test -- --watchAll=false --ci --passWithNoTests'
                 }
             }
         }

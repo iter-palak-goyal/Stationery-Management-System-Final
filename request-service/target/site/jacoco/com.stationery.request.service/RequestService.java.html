@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RequestService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Request Service</a> &gt; <a href="index.source.html" class="el_package">com.stationery.request.service</a> &gt; <span class="el_source">RequestService.java</span></div><h1>RequestService.java</h1><pre class="source lang-java linenums">package com.stationery.request.service;
+
+import com.stationery.request.client.AuthClient;
+import com.stationery.request.client.InventoryClient;
+import com.stationery.request.dto.CreateRequestDto;
+import com.stationery.request.dto.RequestItemDto;
+import com.stationery.request.dto.RequestResponse;
+import com.stationery.request.exception.InsufficientStockException;
+import com.stationery.request.exception.ResourceNotFoundException;
+import com.stationery.request.model.RequestItem;
+import com.stationery.request.model.RequestStatus;
+import com.stationery.request.model.StationeryRequest;
+import com.stationery.request.repository.RequestRepository;
+import feign.FeignException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class RequestService {
+
+<span class="fc" id="L26">    private static final Logger log = LoggerFactory.getLogger(RequestService.class);</span>
+
+    private final RequestRepository requestRepository;
+    private final InventoryClient inventoryClient;
+    private final AuthClient authClient;
+    private final EmailService emailService;
+
+    public RequestService(RequestRepository requestRepository,
+                          InventoryClient inventoryClient,
+                          AuthClient authClient,
+<span class="fc" id="L36">                          EmailService emailService) {</span>
+<span class="fc" id="L37">        this.requestRepository = requestRepository;</span>
+<span class="fc" id="L38">        this.inventoryClient = inventoryClient;</span>
+<span class="fc" id="L39">        this.authClient = authClient;</span>
+<span class="fc" id="L40">        this.emailService = emailService;</span>
+<span class="fc" id="L41">    }</span>
+
+    /**
+     * Create a new stationery request with PENDING status.
+     */
+    @Transactional
+    public RequestResponse createRequest(String username, CreateRequestDto createRequestDto) {
+<span class="fc" id="L48">        log.info(&quot;AUDIT: Creating new stationery request for student: {}&quot;, username);</span>
+
+<span class="fc" id="L50">        StationeryRequest request = StationeryRequest.builder()</span>
+<span class="fc" id="L51">                .studentUsername(username)</span>
+<span class="fc" id="L52">                .status(RequestStatus.PENDING)</span>
+<span class="fc" id="L53">                .build();</span>
+
+        // Add each item to the request
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        for (RequestItemDto itemDto : createRequestDto.getItems()) {</span>
+<span class="fc" id="L57">            RequestItem item = RequestItem.builder()</span>
+<span class="fc" id="L58">                    .itemId(itemDto.getItemId())</span>
+<span class="fc" id="L59">                    .itemName(itemDto.getItemName())</span>
+<span class="fc" id="L60">                    .quantity(itemDto.getQuantity())</span>
+<span class="fc" id="L61">                    .build();</span>
+<span class="fc" id="L62">            request.addItem(item);</span>
+<span class="fc" id="L63">        }</span>
+
+<span class="fc" id="L65">        StationeryRequest savedRequest = requestRepository.save(request);</span>
+<span class="fc" id="L66">        log.info(&quot;AUDIT: Stationery request created successfully. RequestId: {}, Student: {}, Items: {}&quot;,</span>
+<span class="fc" id="L67">                savedRequest.getRequestId(), username, createRequestDto.getItems().size());</span>
+
+<span class="fc" id="L69">        sendStatusNotification(savedRequest);</span>
+
+<span class="fc" id="L71">        return mapToResponse(savedRequest);</span>
+    }
+
+    /**
+     * Get a request by its database ID.
+     */
+    @Transactional(readOnly = true)
+    public RequestResponse getRequestById(Long id) {
+<span class="fc" id="L79">        log.debug(&quot;Fetching request by ID: {}&quot;, id);</span>
+<span class="fc" id="L80">        StationeryRequest request = requestRepository.findById(id)</span>
+<span class="fc" id="L81">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Request&quot;, &quot;id&quot;, id));</span>
+<span class="fc" id="L82">        return mapToResponse(request);</span>
+    }
+
+    /**
+     * Get a request by its UUID-based request ID.
+     */
+    @Transactional(readOnly = true)
+    public RequestResponse getRequestByRequestId(String requestId) {
+<span class="nc" id="L90">        log.debug(&quot;Fetching request by requestId: {}&quot;, requestId);</span>
+<span class="nc" id="L91">        StationeryRequest request = requestRepository.findByRequestId(requestId)</span>
+<span class="nc" id="L92">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Request&quot;, &quot;requestId&quot;, requestId));</span>
+<span class="nc" id="L93">        return mapToResponse(request);</span>
+    }
+
+    /**
+     * Get all requests for a specific student.
+     */
+    @Transactional(readOnly = true)
+    public List&lt;RequestResponse&gt; getRequestsByStudent(String username) {
+<span class="fc" id="L101">        log.debug(&quot;Fetching requests for student: {}&quot;, username);</span>
+<span class="fc" id="L102">        List&lt;StationeryRequest&gt; requests = requestRepository.findByStudentUsername(username);</span>
+<span class="fc" id="L103">        return requests.stream()</span>
+<span class="fc" id="L104">                .map(this::mapToResponse)</span>
+<span class="fc" id="L105">                .collect(Collectors.toList());</span>
+    }
+
+    /**
+     * Get requests for a specific student filtered by status.
+     */
+    @Transactional(readOnly = true)
+    public List&lt;RequestResponse&gt; getRequestsByStudentAndStatus(String username, String status) {
+<span class="nc" id="L113">        log.debug(&quot;Fetching requests for student: {} with status: {}&quot;, username, status);</span>
+<span class="nc" id="L114">        RequestStatus requestStatus = parseStatus(status);</span>
+<span class="nc" id="L115">        List&lt;StationeryRequest&gt; requests = requestRepository.findByStudentUsernameAndStatus(username, requestStatus);</span>
+<span class="nc" id="L116">        return requests.stream()</span>
+<span class="nc" id="L117">                .map(this::mapToResponse)</span>
+<span class="nc" id="L118">                .collect(Collectors.toList());</span>
+    }
+
+    /**
+     * Get all requests (Admin only).
+     */
+    @Transactional(readOnly = true)
+    public List&lt;RequestResponse&gt; getAllRequests() {
+<span class="nc" id="L126">        log.debug(&quot;Fetching all requests (admin)&quot;);</span>
+<span class="nc" id="L127">        List&lt;StationeryRequest&gt; requests = requestRepository.findAll();</span>
+<span class="nc" id="L128">        return requests.stream()</span>
+<span class="nc" id="L129">                .map(this::mapToResponse)</span>
+<span class="nc" id="L130">                .collect(Collectors.toList());</span>
+    }
+
+    /**
+     * Get all requests filtered by status (Admin only).
+     */
+    @Transactional(readOnly = true)
+    public List&lt;RequestResponse&gt; getAllRequestsByStatus(String status) {
+<span class="nc" id="L138">        log.debug(&quot;Fetching all requests with status: {} (admin)&quot;, status);</span>
+<span class="nc" id="L139">        RequestStatus requestStatus = parseStatus(status);</span>
+<span class="nc" id="L140">        List&lt;StationeryRequest&gt; requests = requestRepository.findByStatus(requestStatus);</span>
+<span class="nc" id="L141">        return requests.stream()</span>
+<span class="nc" id="L142">                .map(this::mapToResponse)</span>
+<span class="nc" id="L143">                .collect(Collectors.toList());</span>
+    }
+
+    /**
+     * Approve a request: change status to APPROVED and deduct inventory quantities.
+     */
+    @Transactional
+    public RequestResponse approveRequest(Long id, String adminUsername) {
+<span class="fc" id="L151">        log.info(&quot;AUDIT: Admin '{}' approving request ID: {}&quot;, adminUsername, id);</span>
+
+<span class="fc" id="L153">        StationeryRequest request = requestRepository.findById(id)</span>
+<span class="fc" id="L154">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Request&quot;, &quot;id&quot;, id));</span>
+
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">        if (request.getStatus() != RequestStatus.PENDING) {</span>
+<span class="nc" id="L157">            throw new IllegalStateException(</span>
+<span class="nc" id="L158">                    &quot;Request can only be approved when in PENDING status. Current status: &quot; + request.getStatus());</span>
+        }
+
+        // Deduct inventory for each item
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        for (RequestItem item : request.getItems()) {</span>
+            try {
+<span class="fc" id="L164">                log.info(&quot;AUDIT: Deducting {} units of item '{}' (ID: {}) from inventory&quot;,</span>
+<span class="fc" id="L165">                        item.getQuantity(), item.getItemName(), item.getItemId());</span>
+<span class="fc" id="L166">                inventoryClient.deductItemQuantity(item.getItemId(), item.getQuantity());</span>
+<span class="nc" id="L167">            } catch (FeignException.BadRequest e) {</span>
+<span class="nc" id="L168">                log.error(&quot;AUDIT: Insufficient stock for item '{}' (ID: {}). Approval failed.&quot;,</span>
+<span class="nc" id="L169">                        item.getItemName(), item.getItemId());</span>
+<span class="nc" id="L170">                throw new InsufficientStockException(item.getItemName(), item.getQuantity());</span>
+<span class="nc" id="L171">            } catch (FeignException e) {</span>
+<span class="nc" id="L172">                log.error(&quot;AUDIT: Failed to deduct inventory for item '{}' (ID: {}): {}&quot;,</span>
+<span class="nc" id="L173">                        item.getItemName(), item.getItemId(), e.getMessage());</span>
+<span class="nc" id="L174">                throw new RuntimeException(&quot;Failed to deduct inventory for item: &quot; + item.getItemName(), e);</span>
+<span class="fc" id="L175">            }</span>
+<span class="fc" id="L176">        }</span>
+
+<span class="fc" id="L178">        request.setStatus(RequestStatus.APPROVED);</span>
+<span class="fc" id="L179">        request.setAdminUsername(adminUsername);</span>
+<span class="fc" id="L180">        StationeryRequest savedRequest = requestRepository.save(request);</span>
+
+<span class="fc" id="L182">        log.info(&quot;AUDIT: Request ID: {} approved by admin '{}'. All inventory deductions successful.&quot;,</span>
+                id, adminUsername);
+
+<span class="fc" id="L185">        sendStatusNotification(savedRequest);</span>
+
+<span class="fc" id="L187">        return mapToResponse(savedRequest);</span>
+    }
+
+    /**
+     * Reject a request: change status to REJECTED with a reason.
+     */
+    @Transactional
+    public RequestResponse rejectRequest(Long id, String adminUsername, String reason) {
+<span class="fc" id="L195">        log.info(&quot;AUDIT: Admin '{}' rejecting request ID: {} with reason: '{}'&quot;, adminUsername, id, reason);</span>
+
+<span class="fc" id="L197">        StationeryRequest request = requestRepository.findById(id)</span>
+<span class="pc" id="L198">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Request&quot;, &quot;id&quot;, id));</span>
+
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">        if (request.getStatus() != RequestStatus.PENDING) {</span>
+<span class="nc" id="L201">            throw new IllegalStateException(</span>
+<span class="nc" id="L202">                    &quot;Request can only be rejected when in PENDING status. Current status: &quot; + request.getStatus());</span>
+        }
+
+<span class="fc" id="L205">        request.setStatus(RequestStatus.REJECTED);</span>
+<span class="fc" id="L206">        request.setRejectionReason(reason);</span>
+<span class="fc" id="L207">        request.setAdminUsername(adminUsername);</span>
+<span class="fc" id="L208">        StationeryRequest savedRequest = requestRepository.save(request);</span>
+
+<span class="fc" id="L210">        log.info(&quot;AUDIT: Request ID: {} rejected by admin '{}'.&quot;, id, adminUsername);</span>
+
+<span class="fc" id="L212">        sendStatusNotification(savedRequest);</span>
+
+<span class="fc" id="L214">        return mapToResponse(savedRequest);</span>
+    }
+
+    /**
+     * Fulfill a request: change status from APPROVED to FULFILLED.
+     */
+    @Transactional
+    public RequestResponse fulfillRequest(Long id) {
+<span class="nc" id="L222">        log.info(&quot;AUDIT: Fulfilling request ID: {}&quot;, id);</span>
+
+<span class="nc" id="L224">        StationeryRequest request = requestRepository.findById(id)</span>
+<span class="nc" id="L225">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Request&quot;, &quot;id&quot;, id));</span>
+
+<span class="nc bnc" id="L227" title="All 2 branches missed.">        if (request.getStatus() != RequestStatus.APPROVED) {</span>
+<span class="nc" id="L228">            throw new IllegalStateException(</span>
+<span class="nc" id="L229">                    &quot;Request can only be fulfilled when in APPROVED status. Current status: &quot; + request.getStatus());</span>
+        }
+
+<span class="nc" id="L232">        request.setStatus(RequestStatus.FULFILLED);</span>
+<span class="nc" id="L233">        StationeryRequest savedRequest = requestRepository.save(request);</span>
+
+<span class="nc" id="L235">        log.info(&quot;AUDIT: Request ID: {} fulfilled successfully.&quot;, id);</span>
+
+<span class="nc" id="L237">        sendStatusNotification(savedRequest);</span>
+
+<span class="nc" id="L239">        return mapToResponse(savedRequest);</span>
+    }
+
+    // ========== Helper Methods ==========
+
+    private void sendStatusNotification(StationeryRequest request) {
+<span class="fc" id="L245">        String username = request.getStudentUsername();</span>
+<span class="fc" id="L246">        String status = request.getStatus().name();</span>
+<span class="fc" id="L247">        String requestId = request.getRequestId();</span>
+        
+        try {
+<span class="fc" id="L250">            log.info(&quot;Attempting to fetch email for student '{}' via auth-service&quot;, username);</span>
+<span class="nc" id="L251">            String email = authClient.getUserEmail(username);</span>
+<span class="nc bnc" id="L252" title="All 4 branches missed.">            if (email != null &amp;&amp; !email.isBlank()) {</span>
+<span class="nc" id="L253">                String subject = String.format(&quot;Stationery Request #%s Status Update&quot;, requestId);</span>
+                
+<span class="nc" id="L255">                StringBuilder body = new StringBuilder();</span>
+<span class="nc" id="L256">                body.append(&quot;Dear &quot;).append(username).append(&quot;,\n\n&quot;);</span>
+<span class="nc" id="L257">                body.append(&quot;Your stationery request #&quot;).append(requestId).append(&quot; status has changed to: &quot;).append(status).append(&quot;.\n\n&quot;);</span>
+                
+<span class="nc bnc" id="L259" title="All 4 branches missed.">                if (request.getStatus() == RequestStatus.REJECTED &amp;&amp; request.getRejectionReason() != null) {</span>
+<span class="nc" id="L260">                    body.append(&quot;Reason for rejection: &quot;).append(request.getRejectionReason()).append(&quot;\n\n&quot;);</span>
+                }
+                
+<span class="nc bnc" id="L263" title="All 4 branches missed.">                if (request.getStatus() == RequestStatus.APPROVED &amp;&amp; request.getAdminUsername() != null) {</span>
+<span class="nc" id="L264">                    body.append(&quot;Approved by: &quot;).append(request.getAdminUsername()).append(&quot;\n\n&quot;);</span>
+                }
+                
+<span class="nc" id="L267">                body.append(&quot;Best regards,\n&quot;);</span>
+<span class="nc" id="L268">                body.append(&quot;Stationery Management System Team&quot;);</span>
+                
+<span class="nc" id="L270">                emailService.sendNotification(email, subject, body.toString());</span>
+<span class="nc" id="L271">            } else {</span>
+<span class="nc" id="L272">                log.warn(&quot;Fetched email for user '{}' is blank, skipping notification.&quot;, username);</span>
+            }
+<span class="fc" id="L274">        } catch (Exception e) {</span>
+<span class="fc" id="L275">            log.error(&quot;Failed to send status update notification email for user '{}' (Request ID: {}): {}&quot;,</span>
+<span class="fc" id="L276">                    username, requestId, e.getMessage());</span>
+<span class="nc" id="L277">        }</span>
+<span class="fc" id="L278">    }</span>
+
+    private RequestStatus parseStatus(String status) {
+        try {
+<span class="nc" id="L282">            return RequestStatus.valueOf(status.toUpperCase());</span>
+<span class="nc" id="L283">        } catch (IllegalArgumentException e) {</span>
+<span class="nc" id="L284">            throw new IllegalArgumentException(&quot;Invalid request status: &quot; + status</span>
+                    + &quot;. Valid values are: PENDING, APPROVED, REJECTED, FULFILLED&quot;);
+        }
+    }
+
+    private RequestResponse mapToResponse(StationeryRequest request) {
+<span class="fc" id="L290">        List&lt;RequestItemDto&gt; itemDtos = request.getItems().stream()</span>
+<span class="fc" id="L291">                .map(item -&gt; RequestItemDto.builder()</span>
+<span class="fc" id="L292">                        .itemId(item.getItemId())</span>
+<span class="fc" id="L293">                        .itemName(item.getItemName())</span>
+<span class="fc" id="L294">                        .quantity(item.getQuantity())</span>
+<span class="fc" id="L295">                        .build())</span>
+<span class="fc" id="L296">                .collect(Collectors.toList());</span>
+
+<span class="fc" id="L298">        return RequestResponse.builder()</span>
+<span class="fc" id="L299">                .id(request.getId())</span>
+<span class="fc" id="L300">                .requestId(request.getRequestId())</span>
+<span class="fc" id="L301">                .studentUsername(request.getStudentUsername())</span>
+<span class="fc" id="L302">                .items(itemDtos)</span>
+<span class="fc" id="L303">                .status(request.getStatus().name())</span>
+<span class="fc" id="L304">                .rejectionReason(request.getRejectionReason())</span>
+<span class="fc" id="L305">                .adminUsername(request.getAdminUsername())</span>
+<span class="fc" id="L306">                .createdAt(request.getCreatedAt())</span>
+<span class="fc" id="L307">                .updatedAt(request.getUpdatedAt())</span>
+<span class="fc" id="L308">                .build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

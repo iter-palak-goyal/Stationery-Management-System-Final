@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ErrorResponse.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Inventory Service</a> &gt; <a href="index.source.html" class="el_package">com.stationery.inventory.exception</a> &gt; <span class="el_source">ErrorResponse.java</span></div><h1>ErrorResponse.java</h1><pre class="source lang-java linenums">package com.stationery.inventory.exception;
+
+import java.time.LocalDateTime;
+
+public class ErrorResponse {
+
+    private int status;
+    private String message;
+    private LocalDateTime timestamp;
+
+<span class="nc" id="L11">    public ErrorResponse() {}</span>
+
+<span class="nc" id="L13">    public ErrorResponse(int status, String message, LocalDateTime timestamp) {</span>
+<span class="nc" id="L14">        this.status = status;</span>
+<span class="nc" id="L15">        this.message = message;</span>
+<span class="nc" id="L16">        this.timestamp = timestamp;</span>
+<span class="nc" id="L17">    }</span>
+
+<span class="nc" id="L19">    public int getStatus() { return status; }</span>
+<span class="nc" id="L20">    public void setStatus(int status) { this.status = status; }</span>
+
+<span class="nc" id="L22">    public String getMessage() { return message; }</span>
+<span class="nc" id="L23">    public void setMessage(String message) { this.message = message; }</span>
+
+<span class="nc" id="L25">    public LocalDateTime getTimestamp() { return timestamp; }</span>
+<span class="nc" id="L26">    public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }</span>
+
+<span class="nc" id="L28">    public static ErrorResponseBuilder builder() { return new ErrorResponseBuilder(); }</span>
+
+<span class="nc" id="L30">    public static class ErrorResponseBuilder {</span>
+        private int status;
+        private String message;
+        private LocalDateTime timestamp;
+
+<span class="nc" id="L35">        public ErrorResponseBuilder status(int status) { this.status = status; return this; }</span>
+<span class="nc" id="L36">        public ErrorResponseBuilder message(String message) { this.message = message; return this; }</span>
+<span class="nc" id="L37">        public ErrorResponseBuilder timestamp(LocalDateTime timestamp) { this.timestamp = timestamp; return this; }</span>
+
+        public ErrorResponse build() {
+<span class="nc" id="L40">            return new ErrorResponse(status, message, timestamp);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

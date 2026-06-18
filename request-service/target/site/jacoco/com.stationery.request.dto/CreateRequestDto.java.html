@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CreateRequestDto.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Request Service</a> &gt; <a href="index.source.html" class="el_package">com.stationery.request.dto</a> &gt; <span class="el_source">CreateRequestDto.java</span></div><h1>CreateRequestDto.java</h1><pre class="source lang-java linenums">package com.stationery.request.dto;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+
+import java.util.List;
+
+public class CreateRequestDto {
+
+    @NotEmpty(message = &quot;At least one item is required&quot;)
+    @Valid
+    private List&lt;RequestItemDto&gt; items;
+
+<span class="nc" id="L14">    public CreateRequestDto() {}</span>
+
+<span class="fc" id="L16">    public CreateRequestDto(List&lt;RequestItemDto&gt; items) {</span>
+<span class="fc" id="L17">        this.items = items;</span>
+<span class="fc" id="L18">    }</span>
+
+<span class="fc" id="L20">    public List&lt;RequestItemDto&gt; getItems() { return items; }</span>
+<span class="nc" id="L21">    public void setItems(List&lt;RequestItemDto&gt; items) { this.items = items; }</span>
+
+<span class="fc" id="L23">    public static CreateRequestDtoBuilder builder() { return new CreateRequestDtoBuilder(); }</span>
+
+<span class="fc" id="L25">    public static class CreateRequestDtoBuilder {</span>
+        private List&lt;RequestItemDto&gt; items;
+
+<span class="fc" id="L28">        public CreateRequestDtoBuilder items(List&lt;RequestItemDto&gt; items) { this.items = items; return this; }</span>
+
+        public CreateRequestDto build() {
+<span class="fc" id="L31">            return new CreateRequestDto(items);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

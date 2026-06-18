@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RequestItem.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Request Service</a> &gt; <a href="index.source.html" class="el_package">com.stationery.request.model</a> &gt; <span class="el_source">RequestItem.java</span></div><h1>RequestItem.java</h1><pre class="source lang-java linenums">package com.stationery.request.model;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.Min;
+
+@Entity
+@Table(name = &quot;request_items&quot;)
+public class RequestItem {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = &quot;item_id&quot;, nullable = false)
+    private Long itemId;
+
+    @Column(name = &quot;item_name&quot;, nullable = false)
+    private String itemName;
+
+    @Min(1)
+    @Column(nullable = false)
+    private Integer quantity;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;request_id&quot;, nullable = false)
+    private StationeryRequest request;
+
+<span class="nc" id="L36">    public RequestItem() {}</span>
+
+<span class="fc" id="L38">    public RequestItem(Long id, Long itemId, String itemName, Integer quantity, StationeryRequest request) {</span>
+<span class="fc" id="L39">        this.id = id;</span>
+<span class="fc" id="L40">        this.itemId = itemId;</span>
+<span class="fc" id="L41">        this.itemName = itemName;</span>
+<span class="fc" id="L42">        this.quantity = quantity;</span>
+<span class="fc" id="L43">        this.request = request;</span>
+<span class="fc" id="L44">    }</span>
+
+<span class="nc" id="L46">    public Long getId() { return id; }</span>
+<span class="nc" id="L47">    public void setId(Long id) { this.id = id; }</span>
+
+<span class="fc" id="L49">    public Long getItemId() { return itemId; }</span>
+<span class="nc" id="L50">    public void setItemId(Long itemId) { this.itemId = itemId; }</span>
+
+<span class="fc" id="L52">    public String getItemName() { return itemName; }</span>
+<span class="nc" id="L53">    public void setItemName(String itemName) { this.itemName = itemName; }</span>
+
+<span class="fc" id="L55">    public Integer getQuantity() { return quantity; }</span>
+<span class="nc" id="L56">    public void setQuantity(Integer quantity) { this.quantity = quantity; }</span>
+
+<span class="nc" id="L58">    public StationeryRequest getRequest() { return request; }</span>
+<span class="fc" id="L59">    public void setRequest(StationeryRequest request) { this.request = request; }</span>
+
+<span class="fc" id="L61">    public static RequestItemBuilder builder() { return new RequestItemBuilder(); }</span>
+
+<span class="fc" id="L63">    public static class RequestItemBuilder {</span>
+        private Long id;
+        private Long itemId;
+        private String itemName;
+        private Integer quantity;
+        private StationeryRequest request;
+
+<span class="fc" id="L70">        public RequestItemBuilder id(Long id) { this.id = id; return this; }</span>
+<span class="fc" id="L71">        public RequestItemBuilder itemId(Long itemId) { this.itemId = itemId; return this; }</span>
+<span class="fc" id="L72">        public RequestItemBuilder itemName(String itemName) { this.itemName = itemName; return this; }</span>
+<span class="fc" id="L73">        public RequestItemBuilder quantity(Integer quantity) { this.quantity = quantity; return this; }</span>
+<span class="nc" id="L74">        public RequestItemBuilder request(StationeryRequest request) { this.request = request; return this; }</span>
+
+        public RequestItem build() {
+<span class="fc" id="L77">            return new RequestItem(id, itemId, itemName, quantity, request);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

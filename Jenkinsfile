@@ -250,6 +250,8 @@ pipeline {
             steps {
                 echo 'Deploying Stationery Management System...'
                 sh 'docker-compose down --remove-orphans'
+                sh 'docker rm -f sms-mysql sms-eureka-server sms-config-server sms-api-gateway sms-auth-service sms-inventory-service sms-request-service sms-frontend || true'
+                sh 'docker network rm sms-network || true'
                 sh 'docker-compose up -d --build'
 
                 echo 'Waiting for services to become healthy...'

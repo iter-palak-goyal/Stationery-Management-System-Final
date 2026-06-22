@@ -15,6 +15,7 @@ import java.util.Collections;
  * Loads user details from the database for authentication.
  */
 @Service
+//Spring automatically recognizes this class as the official bridge. load user's detail from db for authenticatio.
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;

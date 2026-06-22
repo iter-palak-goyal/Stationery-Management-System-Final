@@ -3,6 +3,7 @@ package com.stationery.gateway.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+//defines the rules of CORs
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
@@ -40,6 +41,7 @@ public class CorsConfig {
 
         //tells server to accept requests containing any custom http header sent by frontend.
         corsConfig.setAllowedHeaders(List.of("*"));
+        //frontend is allowed to read these response header
         corsConfig.setExposedHeaders(List.of("Authorization", "Content-Type"));
 
         // tells the browser that it is allowed to send sensitive credentials

@@ -24,6 +24,7 @@ public class RegisterRequest {
     //if frontend does not send a role, default to STUDENT.
     private String role = "STUDENT";
 
+    //to allow object instantiation without passing any initial values
     public RegisterRequest() {}
 
     public RegisterRequest(String username, String email, String password, String role) {
@@ -47,6 +48,7 @@ public class RegisterRequest {
 
     public static RegisterRequestBuilder builder() { return new RegisterRequestBuilder(); }
 
+    //we have to create object of helper class only without creating object of parent class.
     public static class RegisterRequestBuilder {
         private String username;
         private String email;

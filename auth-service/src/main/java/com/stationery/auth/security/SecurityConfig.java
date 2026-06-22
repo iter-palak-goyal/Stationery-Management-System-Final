@@ -17,6 +17,8 @@ import org.springframework.security.web.SecurityFilterChain;
  * Configures stateless session management, CSRF disabling, and public auth endpoints.
  */
 @Configuration
+
+//turns on spring security's web protection features.
 @EnableWebSecurity
 public class SecurityConfig {
 

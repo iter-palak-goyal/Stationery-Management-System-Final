@@ -18,7 +18,9 @@ import org.springframework.web.bind.annotation.*;
  * REST controller for authentication operations.
  * Handles user registration, login, and token validation endpoints.
  */
+//Whenever someone sends an HTTP request over the internet to this app, send it to this class.
 @RestController
+//Sets the base URL for the whole file.
 @RequestMapping("/api/auth")
 public class AuthController {
 
@@ -37,6 +39,8 @@ public class AuthController {
      * @return ResponseEntity with the AuthResponse containing the JWT token
      */
     @PostMapping("/register")
+    
+    //ResponseEntity allows you to send back HTTP status codes along with your custom JSON AuthResponse.
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         logger.info("Registration request received for username: {}", request.getUsername());
         AuthResponse response = authService.register(request);

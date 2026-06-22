@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import { useAuth } from '../context/AuthContext';
 import './Inventory.css';
 
 const Inventory = () => {
   const { isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
+  const [selectedItemIds, setSelectedItemIds] = useState(new Set());
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(20);
@@ -41,11 +43,13 @@ const Inventory = () => {
   };
 
   useEffect(() => {
+    setSelectedItemIds(new Set());
     loadItems();
   }, [page, size]);
 
   const handleSearch = async (e) => {
     e.preventDefault();
+    setSelectedItemIds(new Set());
     await loadItems();
   };
 
@@ -61,6 +65,57 @@ const Inventory = () => {
     }
   };
 
+  const handleToggleSelect = (id) => {
+    setSelectedItemIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      const availableIds = items
+        .filter((item) => item.availableQuantity > 0)
+        .map((item) => item.id);
+      setSelectedItemIds(new Set(availableIds));
+    } else {
+      setSelectedItemIds(new Set());
+    }
+  };
+
+  const handleRequestSingle = (item) => {
+    navigate('/requests/new', {
+      state: {
+        prefilledItems: [{
+          itemId: item.id,
+          itemName: item.name,
+          quantity: 1,
+          availableQuantity: item.availableQuantity
+        }]
+      }
+    });
+  };
+
+  const handleRequestSelected = () => {
+    const selectedList = items
+      .filter((item) => selectedItemIds.has(item.id))
+      .map((item) => ({
+        itemId: item.id,
+        itemName: item.name,
+        quantity: 1,
+        availableQuantity: item.availableQuantity
+      }));
+    navigate('/requests/new', { state: { prefilledItems: selectedList } });
+  };
+
+  const availableItemsOnPage = items.filter((item) => item.availableQuantity > 0);
+  const isAllSelected = availableItemsOnPage.length > 0 && availableItemsOnPage.every((item) => selectedItemIds.has(item.id));
+
   return (
     <div className="page-card">
       <div className="page-header">
@@ -68,10 +123,23 @@ const Inventory = () => {
           <h1>Inventory</h1>
           <p className="page-subtitle">Browse stationery items and search by name.</p>
         </div>
-        {isAdmin() && (
+        {isAdmin() ? (
           <div className="page-actions">
             <Link to="/inventory/add" className="btn btn-primary">
               Add New Item
+            </Link>
+          </div>
+        ) : (
+          <div className="page-actions" style={{ display: 'flex', gap: '0.75rem' }}>
+            <button
+              onClick={handleRequestSelected}
+              className="btn btn-primary"
+              disabled={selectedItemIds.size === 0}
+            >
+              📝 Request Selected ({selectedItemIds.size})
+            </button>
+            <Link to="/requests/new" className="btn btn-secondary">
+              ✏️ Custom Request
             </Link>
           </div>
         )}
@@ -96,6 +164,16 @@ const Inventory = () => {
         <table className="data-table">
           <thead>
             <tr>
+              {!isAdmin() && (
+                <th style={{ width: '50px', textAlign: 'center' }}>
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    onChange={handleSelectAll}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                  />
+                </th>
+              )}
               <th>ID</th>
               <th>Name</th>
               <th>Category</th>
@@ -110,10 +188,33 @@ const Inventory = () => {
             {items.length ? (
               items.map((item) => (
                 <tr key={item.id}>
+                  {!isAdmin() && (
+                    <td style={{ textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedItemIds.has(item.id)}
+                        onChange={() => handleToggleSelect(item.id)}
+                        disabled={item.availableQuantity <= 0}
+                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                      />
+                    </td>
+                  )}
                   <td>{item.id}</td>
-                  <td>{item.name}</td>
+                  <td><strong>{item.name}</strong></td>
                   <td>{item.category}</td>
-                  <td>{item.availableQuantity}</td>
+                  <td>
+                    <span style={{
+                      color: item.availableQuantity <= 0 ? '#dc2626' : (item.availableQuantity <= item.minimumQuantity ? '#d97706' : 'inherit'),
+                      fontWeight: 700
+                    }}>
+                      {item.availableQuantity}
+                    </span>
+                    {item.availableQuantity <= 0 ? (
+                      <span className="status-badge rejected" style={{ marginLeft: '0.5rem', padding: '0.15rem 0.5rem', fontSize: '0.7rem' }}>Out of Stock</span>
+                    ) : item.availableQuantity <= item.minimumQuantity ? (
+                      <span className="status-badge pending" style={{ marginLeft: '0.5rem', padding: '0.15rem 0.5rem', fontSize: '0.7rem' }}>Low Stock</span>
+                    ) : null}
+                  </td>
                   <td>{item.minimumQuantity}</td>
                   <td>{item.unit}</td>
                   <td>{item.description || '—'}</td>
@@ -128,14 +229,20 @@ const Inventory = () => {
                         </button>
                       </div>
                     ) : (
-                      '—'
+                      <button
+                        onClick={() => handleRequestSingle(item)}
+                        className="btn btn-sm btn-primary"
+                        disabled={item.availableQuantity <= 0}
+                      >
+                        Request
+                      </button>
                     )}
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="8" className="empty-row">
+                <td colSpan={isAdmin() ? "8" : "9"} className="empty-row">
                   {loading ? 'Loading items...' : 'No items found.'}
                 </td>
               </tr>

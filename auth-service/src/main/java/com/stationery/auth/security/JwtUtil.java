@@ -35,6 +35,7 @@ public class JwtUtil {
      *
      * @return the SecretKey for signing and verifying tokens
      */
+    // convert to byte using hmac sha 256, ensures that only our server can generate the token.
     private SecretKey getSigningKey() {
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);

@@ -1,5 +1,9 @@
 package com.stationery.gateway.filter;
+// package declaration
 
+// brings tool to read JWTs. 
+// brings gateway tools.
+// reactor.core.... is used coz api gateway is built on spring webflux.
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -38,16 +42,22 @@ import java.util.List;
  *   <li>Returns HTTP 401 Unauthorized for invalid or missing tokens</li>
  * </ul>
  */
+
+// automatically create an object out of this class when app starts and manage.
 @Component
 public class JwtAuthFilter implements GlobalFilter, Ordered {
 
+    //creates logger object so that we can print debugging messages to console.
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthFilter.class);
 
+    //bearer - Standard JWT tokens are sent in header as bearer.
+    //header-user-name/role - names of custom headers.
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String HEADER_USER_NAME = "X-User-Name";
     private static final String HEADER_USER_ROLE = "X-User-Role";
 
     /** Public paths that bypass JWT authentication. */
+    //URL that gateway should ignore.
     private static final List<String> OPEN_API_ENDPOINTS = List.of(
             "/api/auth/login",
             "/api/auth/register",
@@ -61,15 +71,23 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
             "/api/requests/v3/api-docs"
     );
 
+    //goes into application.yml and looks for jwt.secret.
     @Value("${jwt.secret:stationeryManagementSecretKey2024StationeryApp}")
     private String jwtSecret;
 
+    //MAIN LOGIC - FILTER METHOD
+    // tell java that we are providing specific logic for GlobalFilter interface.
     @Override
+
+    // this return type mean we will return an empty signal when we are done processing the request.
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+
+        //extracts incoming request ad grabs exact URL path the user is trying to visit.
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
 
         // Skip authentication for public endpoints
+        //checks if URL is bypassed or not.
         if (isOpenEndpoint(path)) {
             logger.debug("Skipping JWT validation for open endpoint: {}", path);
             return chain.filter(exchange);
@@ -81,6 +99,7 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
             return onUnauthorized(exchange, "Missing Authorization header");
         }
 
+        //extract actual text of header.
         String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
         if (authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {
@@ -88,9 +107,11 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
             return onUnauthorized(exchange, "Invalid Authorization header format");
         }
 
+        //chops off "Bearer " from the header to get the actual token string.
         String token = authHeader.substring(BEARER_PREFIX.length());
 
         try {
+            //calls helper method to decrypt the token.
             Claims claims = extractClaims(token);
             String username = claims.getSubject();
             String role = claims.get("role", String.class);
@@ -122,23 +143,13 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
         return -1;
     }
 
-    /**
-     * Checks whether the given path matches any of the open (public) API endpoints.
-     *
-     * @param path the request URI path
-     * @return {@code true} if the path is public and should skip authentication
-     */
+     // Checks whether the current URL path matches any of the public API endpoints.
     private boolean isOpenEndpoint(String path) {
         return OPEN_API_ENDPOINTS.stream()
                 .anyMatch(endpoint -> path.startsWith(endpoint.replace("/**", "")));
     }
 
-    /**
-     * Extracts JWT claims by parsing the token with the configured secret key.
-     *
-     * @param token the JWT token string
-     * @return the parsed claims
-     */
+    //takes jwtsecret convert to secretkey.
     private Claims extractClaims(String token) {
         SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
         return Jwts.parser()
@@ -148,13 +159,7 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
                 .getPayload();
     }
 
-    /**
-     * Completes the response with HTTP 401 Unauthorized status.
-     *
-     * @param exchange the current server web exchange
-     * @param message  the reason for the unauthorized response (logged only)
-     * @return a completed {@code Mono<Void>}
-     */
+    //helper method which is used to kick unauthorized users out of the system by sending 401 status code and message.
     private Mono<Void> onUnauthorized(ServerWebExchange exchange, String message) {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(HttpStatus.UNAUTHORIZED);

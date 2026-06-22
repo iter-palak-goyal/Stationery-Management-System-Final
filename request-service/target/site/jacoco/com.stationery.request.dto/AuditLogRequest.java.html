@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuditLogRequest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Request Service</a> &gt; <a href="index.source.html" class="el_package">com.stationery.request.dto</a> &gt; <span class="el_source">AuditLogRequest.java</span></div><h1>AuditLogRequest.java</h1><pre class="source lang-java linenums">package com.stationery.request.dto;
+
+import java.time.LocalDateTime;
+
+public class AuditLogRequest {
+    private String username;
+    private String role;
+    private String action;
+    private String requestId;
+    private String details;
+    private String reason;
+
+<span class="nc" id="L13">    public AuditLogRequest() {}</span>
+
+<span class="nc" id="L15">    public AuditLogRequest(String username, String role, String action, String requestId, String details, String reason) {</span>
+<span class="nc" id="L16">        this.username = username;</span>
+<span class="nc" id="L17">        this.role = role;</span>
+<span class="nc" id="L18">        this.action = action;</span>
+<span class="nc" id="L19">        this.requestId = requestId;</span>
+<span class="nc" id="L20">        this.details = details;</span>
+<span class="nc" id="L21">        this.reason = reason;</span>
+<span class="nc" id="L22">    }</span>
+
+<span class="nc" id="L24">    public String getUsername() { return username; }</span>
+<span class="nc" id="L25">    public void setUsername(String username) { this.username = username; }</span>
+
+<span class="nc" id="L27">    public String getRole() { return role; }</span>
+<span class="nc" id="L28">    public void setRole(String role) { this.role = role; }</span>
+
+<span class="nc" id="L30">    public String getAction() { return action; }</span>
+<span class="nc" id="L31">    public void setAction(String action) { this.action = action; }</span>
+
+<span class="nc" id="L33">    public String getRequestId() { return requestId; }</span>
+<span class="nc" id="L34">    public void setRequestId(String requestId) { this.requestId = requestId; }</span>
+
+<span class="nc" id="L36">    public String getDetails() { return details; }</span>
+<span class="nc" id="L37">    public void setDetails(String details) { this.details = details; }</span>
+
+<span class="nc" id="L39">    public String getReason() { return reason; }</span>
+<span class="nc" id="L40">    public void setReason(String reason) { this.reason = reason; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

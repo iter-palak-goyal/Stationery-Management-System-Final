@@ -10,6 +10,7 @@ import com.stationery.request.model.RequestItem;
 import com.stationery.request.model.RequestStatus;
 import com.stationery.request.model.StationeryRequest;
 import com.stationery.request.repository.RequestRepository;
+import com.stationery.request.repository.AuditLogRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,6 +47,15 @@ class RequestServiceTest {
 
     @Mock
     private InventoryClient inventoryClient;
+
+    @Mock
+    private AuthClient authClient;
+
+    @Mock
+    private EmailService emailService;
+
+    @Mock
+    private AuditLogRepository auditLogRepository;
 
     @InjectMocks
     private RequestService requestService;

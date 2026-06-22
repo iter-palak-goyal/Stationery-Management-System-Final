@@ -3,6 +3,8 @@
 /Users/palak2/Downloads/stationery-management/request-service/src/main/java/com/stationery/request/model/StationeryRequest.java
 /Users/palak2/Downloads/stationery-management/request-service/src/main/java/com/stationery/request/dto/CreateRequestDto.java
 /Users/palak2/Downloads/stationery-management/request-service/src/main/java/com/stationery/request/controller/RequestController.java
+/Users/palak2/Downloads/stationery-management/request-service/src/main/java/com/stationery/request/dto/AuditLogRequest.java
+/Users/palak2/Downloads/stationery-management/request-service/src/main/java/com/stationery/request/model/AuditLog.java
 /Users/palak2/Downloads/stationery-management/request-service/src/main/java/com/stationery/request/dto/RequestResponse.java
 /Users/palak2/Downloads/stationery-management/request-service/src/main/java/com/stationery/request/service/RequestService.java
 /Users/palak2/Downloads/stationery-management/request-service/src/main/java/com/stationery/request/client/AuthClient.java
@@ -15,4 +17,5 @@
 /Users/palak2/Downloads/stationery-management/request-service/src/main/java/com/stationery/request/exception/ResourceNotFoundException.java
 /Users/palak2/Downloads/stationery-management/request-service/src/main/java/com/stationery/request/exception/InsufficientStockException.java
 /Users/palak2/Downloads/stationery-management/request-service/src/main/java/com/stationery/request/dto/RequestItemDto.java
+/Users/palak2/Downloads/stationery-management/request-service/src/main/java/com/stationery/request/repository/AuditLogRepository.java
 /Users/palak2/Downloads/stationery-management/request-service/src/main/java/com/stationery/request/exception/GlobalExceptionHandler.java

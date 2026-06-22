@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class EmailService {
 
-<span class="nc" id="L13">    private static final Logger log = LoggerFactory.getLogger(EmailService.class);</span>
+<span class="fc" id="L13">    private static final Logger log = LoggerFactory.getLogger(EmailService.class);</span>
 
     private final JavaMailSender mailSender;
 
@@ -33,7 +33,7 @@ public class EmailService {
                  &quot;To: {}\n&quot; +
                  &quot;Subject: {}\n&quot; +
                  &quot;Body: {}\n&quot; +
-                 &quot;--------------------------------------------------&quot;, toEmail, subject, body);
+<span class="nc" id="L36">                 &quot;--------------------------------------------------&quot;, toEmail, subject, body);</span>
 
 <span class="nc bnc" id="L38" title="All 2 branches missed.">        if (mailSender != null) {</span>
             try {
@@ -46,8 +46,8 @@ public class EmailService {
 <span class="nc" id="L46">                log.info(&quot;AUDIT EMAIL NOTIFICATION: Actual email sent successfully to {}&quot;, toEmail);</span>
 <span class="nc" id="L47">            } catch (Exception e) {</span>
 <span class="nc" id="L48">                log.error(&quot;Failed to send actual email to {}: {}&quot;, toEmail, e.getMessage());</span>
-<span class="nc" id="L49">            }</span>
-        } else {
+            }
+<span class="nc" id="L50">        } else {</span>
 <span class="nc" id="L51">            log.info(&quot;AUDIT EMAIL NOTIFICATION: JavaMailSender not configured. Real email skipped.&quot;);</span>
         }
 <span class="nc" id="L53">    }</span>

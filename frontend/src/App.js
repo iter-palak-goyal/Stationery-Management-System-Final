@@ -12,6 +12,7 @@ import EditItem from './pages/EditItem';
 import CreateRequest from './pages/CreateRequest';
 import MyRequests from './pages/MyRequests';
 import ManageRequests from './pages/ManageRequests';
+import AuditLogs from './pages/AuditLogs';
 import './App.css';
 
 function App() {
@@ -98,6 +99,17 @@ function App() {
                   <Navbar />
                   <main className="main-content">
                     <ManageRequests />
+                  </main>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/audit-logs"
+              element={
+                <ProtectedRoute requiredRole="ADMIN">
+                  <Navbar />
+                  <main className="main-content">
+                    <AuditLogs />
                   </main>
                 </ProtectedRoute>
               }

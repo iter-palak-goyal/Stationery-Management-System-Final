@@ -3,21 +3,15 @@ package com.stationery.request.controller;
 import com.stationery.request.dto.ApproveRejectDto;
 import com.stationery.request.dto.CreateRequestDto;
 import com.stationery.request.dto.RequestResponse;
+import com.stationery.request.dto.AuditLogRequest;
+import com.stationery.request.model.AuditLog;
 import com.stationery.request.service.RequestService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -158,13 +152,40 @@ public class RequestController {
     @PutMapping("/{id}/fulfill")
     public ResponseEntity<RequestResponse> fulfillRequest(
             @PathVariable Long id,
+            @RequestHeader("X-User-Name") String adminUsername,
             @RequestHeader("X-User-Role") String role) {
 
-        log.info("AUDIT: PUT /api/requests/{}/fulfill - Role: {}", id, role);
+        log.info("AUDIT: PUT /api/requests/{}/fulfill - Admin: {}, Role: {}", id, adminUsername, role);
         validateRole(role, "ADMIN");
 
-        RequestResponse response = requestService.fulfillRequest(id);
+        RequestResponse response = requestService.fulfillRequest(id, adminUsername);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get all audit logs (ADMIN only).
+     * GET /api/requests/audit-logs
+     */
+    @GetMapping("/audit-logs")
+    public ResponseEntity<List<AuditLog>> getAuditLogs(
+            @RequestHeader("X-User-Role") String role) {
+        log.info("AUDIT: GET /api/requests/audit-logs - Role: {}", role);
+        validateRole(role, "ADMIN");
+        List<AuditLog> logs = requestService.getAuditLogs();
+        return ResponseEntity.ok(logs);
+    }
+
+    /**
+     * Create an external audit log (e.g. from inventory or auth services).
+     * POST /api/requests/audit-logs
+     */
+    @PostMapping("/audit-logs")
+    public ResponseEntity<Void> createAuditLog(
+            @RequestBody @Valid AuditLogRequest auditLogRequest) {
+        log.info("AUDIT: POST /api/requests/audit-logs - User: {}, Action: {}",
+                auditLogRequest.getUsername(), auditLogRequest.getAction());
+        requestService.createAuditLog(auditLogRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     // ========== Helper Methods ==========

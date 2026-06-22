@@ -6,10 +6,12 @@ import com.stationery.inventory.service.InventoryService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
@@ -25,6 +27,9 @@ public class InventoryController {
     private static final Logger log = LoggerFactory.getLogger(InventoryController.class);
 
     private final InventoryService inventoryService;
+
+    @Value("${services.request-service.url:http://localhost:8083}")
+    private String requestServiceUrl;
 
     public InventoryController(InventoryService inventoryService) {
         this.inventoryService = inventoryService;
@@ -53,6 +58,13 @@ public class InventoryController {
                 userName, userRole, request.getName());
 
         StationeryItemResponse response = inventoryService.createItem(request);
+
+        // Send Audit Log
+        sendAuditLog(userName, userRole, "CREATE_ITEM",
+                String.format("Created item: %s (Category: %s, Qty: %d %s)",
+                        response.getName(), response.getCategory(), response.getAvailableQuantity(), response.getUnit()),
+                "Admin added a new stationery item to inventory");
+
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -129,6 +141,13 @@ public class InventoryController {
         log.info("AUDIT: User '{}' (role: {}) updating stationery item ID: {}", userName, userRole, id);
 
         StationeryItemResponse response = inventoryService.updateItem(id, request);
+
+        // Send Audit Log
+        sendAuditLog(userName, userRole, "UPDATE_ITEM",
+                String.format("Updated item ID %d: %s (Category: %s, Qty: %d %s)",
+                        id, response.getName(), response.getCategory(), response.getAvailableQuantity(), response.getUnit()),
+                "Admin updated item details or stock level in inventory");
+
         return ResponseEntity.ok(response);
     }
 
@@ -154,7 +173,21 @@ public class InventoryController {
 
         log.info("AUDIT: User '{}' (role: {}) deleting stationery item ID: {}", userName, userRole, id);
 
+        // Fetch name for log first
+        String itemName = "ID " + id;
+        try {
+            itemName = inventoryService.getItemById(id).getName();
+        } catch (Exception e) {
+            // ignore
+        }
+
         inventoryService.deleteItem(id);
+
+        // Send Audit Log
+        sendAuditLog(userName, userRole, "DELETE_ITEM",
+                "Deleted stationery item: " + itemName,
+                "Admin deleted a stationery item from inventory");
+
         return ResponseEntity.noContent().build();
     }
 
@@ -207,5 +240,24 @@ public class InventoryController {
 
         List<StationeryItemResponse> items = inventoryService.searchItems(keyword);
         return ResponseEntity.ok(items);
+    }
+
+    /**
+     * Helper to send audit logs to request-service.
+     */
+    private void sendAuditLog(String username, String role, String action, String details, String reason) {
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            java.util.Map<String, String> payload = java.util.Map.of(
+                    "username", username,
+                    "role", role,
+                    "action", action,
+                    "details", details,
+                    "reason", reason
+            );
+            restTemplate.postForEntity(requestServiceUrl + "/api/requests/audit-logs", payload, Void.class);
+        } catch (Exception e) {
+            log.error("Failed to send audit log to request-service: {}", e.getMessage());
+        }
     }
 }

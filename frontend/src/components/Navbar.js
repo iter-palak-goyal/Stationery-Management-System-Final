@@ -29,6 +29,7 @@ const Navbar = () => {
     { path: '/inventory', label: 'Inventory', icon: '📦' },
     { path: '/inventory/add', label: 'Add Item', icon: '➕' },
     { path: '/requests/manage', label: 'Manage Requests', icon: '📋' },
+    { path: '/audit-logs', label: 'Audit Logs', icon: '🛡️' },
   ];
 
   const studentLinks = [

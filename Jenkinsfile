@@ -10,18 +10,27 @@
 //   - Docker registry credentials stored as 'docker-registry-creds'
 // ============================================================
 
+
+//written in Groovy
+//jenkins automatically reads this file when we push code.
+
+//this is the root block of declarative jenkins pipeline. - everything inside defines entire CI/CD process.
 pipeline {
+
+    //run this pipeline on any available jenkins agent.
     agent any
 
+    //tell which pre-configured tools we want to use in this pipeline. - maven, jdk, nodejs.
     tools {
         maven 'Maven-3.9'
         jdk 'JDK-17'
         nodejs 'NodeJS-18'
     }
 
+    //Think of them like global constants for the pipeline. - we can use these variables in any stage or step.
     environment {
         IMAGE_TAG        = "${env.BUILD_NUMBER}"
-        COMPOSE_PROJECT  = 'sms'
+        COMPOSE_PROJECT_NAME = 'sms'
         PATH             = "/usr/local/bin:${env.PATH}"
     }
 
@@ -235,7 +244,7 @@ pipeline {
         }
 
         // ──────────────────────────────────────────────────
-        // Stage 8: Deploy with Docker Compose
+        // Stage 7: Deploy with Docker Compose
         // ──────────────────────────────────────────────────
         stage('Deploy') {
             steps {

@@ -9,46 +9,50 @@
 #   docker-compose logs -f <service> (follow logs for a service)
 # ============================================================
 
-version: '3.8'
 
+# tells docker compose which file format grammar to use, 3.8 is modern version.
+version: '3.8'
+name: sms
+
+# is it the main section. every entry under it becomes one docker container. all the cotainers are start, stopped and managed together.
 services:
 
   # ──────────────────────────────────────────────────────────
   # MySQL Database
   # ──────────────────────────────────────────────────────────
-  mysql:
-    image: mysql:8.0
-    container_name: sms-mysql
-    restart: unless-stopped
+  mysql: #service name
+    image: mysql:8.0 #base image
+    container_name: sms-mysql #name of the container
+    restart: unless-stopped #restart policy - auto-restart ALWAYS, EXCEPT if you manually stopped it.
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_ROOT_HOST: '%'
+      MYSQL_ROOT_HOST: '%' # allow root access from any host ( coz auth-services and all are in other containers)
     ports:
-      - "3307:3306"
+      - "3307:3306" #your PC accesses MySQL via port 3307, but inside docker network it's still 3306
     volumes:
-      - mysql_data:/var/lib/mysql
-      - ./mysql:/docker-entrypoint-initdb.d:ro
+      - mysql_data:/var/lib/mysql #name of docker-managed volume : path inside container where mysql stores data
+      - ./mysql:/docker-entrypoint-initdb.d:ro #local folder : mySQL auto runs every .sql or .sh file in this folder.
     networks:
-      - sms-network
-    healthcheck:
+      - sms-network #connects this service to docker network.
+    healthcheck: #checks if the service is healthy
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
+      interval: 10s #how often docker run health check
+      timeout: 5s #how long will it take to complete the health check
+      retries: 10 #how many times to retry before marking service as unhealthy
+      start_period: 30s #Gives MySQL time to do its initial setup before we judge it.
 
   # ──────────────────────────────────────────────────────────
   # Spring Cloud Config Server
   # ──────────────────────────────────────────────────────────
   config-server:
-    build:
-      context: ./config-server
-      dockerfile: Dockerfile
-    container_name: sms-config-server
-    restart: unless-stopped
+    build: #build docker image from source code
+      context: ./config-server #folder where Dockerfile is located
+      dockerfile: Dockerfile #file name
+    container_name: sms-config-server #name of the container
+    restart: unless-stopped #restart policy - auto-restart ALWAYS, EXCEPT if you manually stopped it.
     ports:
-      - "8888:8888"
-    depends_on:
+      - "8888:8888" #http://localhost:8888/actuator/health check for status
+    depends_on: #start THIS service only AFTER the listed services are healthy
       mysql:
         condition: service_healthy
     networks:
@@ -74,7 +78,7 @@ services:
     depends_on:
       config-server:
         condition: service_healthy
-    environment:
+    environment: #These environment variables OVERRIDE values in application.yml at runtime.
       SPRING_PROFILES_ACTIVE: docker
       SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
       EUREKA_SERVER_PEER_NODE_READ_TIMEOUT_MS: "20000"
@@ -97,7 +101,7 @@ services:
     container_name: sms-api-gateway
     restart: unless-stopped
     ports:
-      - "8090:8090"
+      - "8090:8090" #The frontend calls http://localhost:8090/api/...
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -141,6 +145,7 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SERVICES_REQUEST_SERVICE_URL: http://request-service:8083
     networks:
       - sms-network
     healthcheck:
@@ -175,6 +180,7 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SERVICES_REQUEST_SERVICE_URL: http://request-service:8083
     networks:
       - sms-network
     healthcheck:
@@ -230,7 +236,7 @@ services:
     container_name: sms-frontend
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "3000:80" #Nginx listens on port 80 INSIDE the container
     depends_on:
       api-gateway:
         condition: service_healthy
@@ -243,7 +249,7 @@ services:
 # Named Volumes
 # ──────────────────────────────────────────────────────────
 volumes:
-  mysql_data:
+  mysql_data: #Docker creates and manages this storage area on your HOST machine's disk.
     driver: local
 
 # ──────────────────────────────────────────────────────────

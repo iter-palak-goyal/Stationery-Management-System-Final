@@ -51,8 +51,8 @@ public class StationeryRequest {
     @Column(name = &quot;updated_at&quot;, nullable = false)
     private LocalDateTime updatedAt;
 
-<span class="pc" id="L54">    @OneToMany(mappedBy = &quot;request&quot;, cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)</span>
-    private List&lt;RequestItem&gt; items = new ArrayList&lt;&gt;();
+    @OneToMany(mappedBy = &quot;request&quot;, cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+<span class="pc" id="L55">    private List&lt;RequestItem&gt; items = new ArrayList&lt;&gt;();</span>
 
 <span class="nc" id="L57">    public StationeryRequest() {}</span>
 

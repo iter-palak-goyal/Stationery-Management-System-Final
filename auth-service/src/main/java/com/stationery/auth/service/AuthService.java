@@ -9,11 +9,13 @@ import com.stationery.auth.repository.UserRepository;
 import com.stationery.auth.security.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * Service handling user registration, login, and token validation logic.
@@ -27,6 +29,9 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
+
+    @Value("${services.request-service.url:http://localhost:8083}")
+    private String requestServiceUrl;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
@@ -80,6 +85,11 @@ public class AuthService {
 
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
 
+        // Send Audit Log
+        sendAuditLog(user.getUsername(), user.getRole().name(), "REGISTER", 
+                "User registered with email: " + user.getEmail(), 
+                "New user registration");
+
         return AuthResponse.builder()
                 .token(token)
                 .username(user.getUsername())
@@ -95,21 +105,26 @@ public class AuthService {
      * @return an AuthResponse containing the JWT token and user details
      */
     public AuthResponse login(LoginRequest request) {
-        logger.info("Attempting login for user: {}", request.getUsername());
+        logger.info("Attempting login for email: {}", request.getEmail());
 
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
+                        request.getEmail(),
                         request.getPassword()
                 )
         );
 
-        logger.info("User authenticated successfully: {}", request.getUsername());
+        logger.info("User authenticated successfully with email: {}", request.getEmail());
 
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found: " + request.getUsername()));
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found: " + request.getEmail()));
 
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
+
+        // Send Audit Log
+        sendAuditLog(user.getUsername(), user.getRole().name(), "LOGIN", 
+                "User logged in with email: " + request.getEmail(), 
+                "Successful authentication");
 
         return AuthResponse.builder()
                 .token(token)
@@ -140,5 +155,24 @@ public class AuthService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
         return user.getEmail();
+    }
+
+    /**
+     * Helper to send audit logs to request-service asynchronously.
+     */
+    private void sendAuditLog(String username, String role, String action, String details, String reason) {
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            java.util.Map<String, String> payload = java.util.Map.of(
+                    "username", username,
+                    "role", role,
+                    "action", action,
+                    "details", details,
+                    "reason", reason
+            );
+            restTemplate.postForEntity(requestServiceUrl + "/api/requests/audit-logs", payload, Void.class);
+        } catch (Exception e) {
+            logger.error("Failed to send audit log to request-service: {}", e.getMessage());
+        }
     }
 }

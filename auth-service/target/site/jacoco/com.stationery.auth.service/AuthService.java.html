@@ -9,11 +9,13 @@ import com.stationery.auth.repository.UserRepository;
 import com.stationery.auth.security.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * Service handling user registration, login, and token validation logic.
@@ -21,22 +23,25 @@ import org.springframework.stereotype.Service;
 @Service
 public class AuthService {
 
-<span class="nc" id="L24">    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);</span>
+<span class="nc" id="L26">    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);</span>
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
 
+    @Value(&quot;${services.request-service.url:http://localhost:8083}&quot;)
+    private String requestServiceUrl;
+
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        JwtUtil jwtUtil,
-<span class="nc" id="L34">                       AuthenticationManager authenticationManager) {</span>
-<span class="nc" id="L35">        this.userRepository = userRepository;</span>
-<span class="nc" id="L36">        this.passwordEncoder = passwordEncoder;</span>
-<span class="nc" id="L37">        this.jwtUtil = jwtUtil;</span>
-<span class="nc" id="L38">        this.authenticationManager = authenticationManager;</span>
-<span class="nc" id="L39">    }</span>
+<span class="nc" id="L39">                       AuthenticationManager authenticationManager) {</span>
+<span class="nc" id="L40">        this.userRepository = userRepository;</span>
+<span class="nc" id="L41">        this.passwordEncoder = passwordEncoder;</span>
+<span class="nc" id="L42">        this.jwtUtil = jwtUtil;</span>
+<span class="nc" id="L43">        this.authenticationManager = authenticationManager;</span>
+<span class="nc" id="L44">    }</span>
 
     /**
      * Registers a new user in the system.
@@ -48,44 +53,49 @@ public class AuthService {
      * @throws RuntimeException if the username or email already exists
      */
     public AuthResponse register(RegisterRequest request) {
-<span class="nc" id="L51">        logger.info(&quot;Attempting to register user: {}&quot;, request.getUsername());</span>
+<span class="nc" id="L56">        logger.info(&quot;Attempting to register user: {}&quot;, request.getUsername());</span>
 
-<span class="nc bnc" id="L53" title="All 2 branches missed.">        if (userRepository.existsByUsername(request.getUsername())) {</span>
-<span class="nc" id="L54">            logger.warn(&quot;Registration failed - username already exists: {}&quot;, request.getUsername());</span>
-<span class="nc" id="L55">            throw new RuntimeException(&quot;Username already exists: &quot; + request.getUsername());</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">        if (userRepository.existsByUsername(request.getUsername())) {</span>
+<span class="nc" id="L59">            logger.warn(&quot;Registration failed - username already exists: {}&quot;, request.getUsername());</span>
+<span class="nc" id="L60">            throw new RuntimeException(&quot;Username already exists: &quot; + request.getUsername());</span>
         }
 
-<span class="nc bnc" id="L58" title="All 2 branches missed.">        if (userRepository.existsByEmail(request.getEmail())) {</span>
-<span class="nc" id="L59">            logger.warn(&quot;Registration failed - email already exists: {}&quot;, request.getEmail());</span>
-<span class="nc" id="L60">            throw new RuntimeException(&quot;Email already exists: &quot; + request.getEmail());</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">        if (userRepository.existsByEmail(request.getEmail())) {</span>
+<span class="nc" id="L64">            logger.warn(&quot;Registration failed - email already exists: {}&quot;, request.getEmail());</span>
+<span class="nc" id="L65">            throw new RuntimeException(&quot;Email already exists: &quot; + request.getEmail());</span>
         }
 
         Role role;
         try {
-<span class="nc" id="L65">            role = Role.valueOf(request.getRole().toUpperCase());</span>
-<span class="nc" id="L66">        } catch (IllegalArgumentException e) {</span>
-<span class="nc" id="L67">            logger.warn(&quot;Invalid role provided: {}, defaulting to STUDENT&quot;, request.getRole());</span>
-<span class="nc" id="L68">            role = Role.STUDENT;</span>
-<span class="nc" id="L69">        }</span>
+<span class="nc" id="L70">            role = Role.valueOf(request.getRole().toUpperCase());</span>
+<span class="nc" id="L71">        } catch (IllegalArgumentException e) {</span>
+<span class="nc" id="L72">            logger.warn(&quot;Invalid role provided: {}, defaulting to STUDENT&quot;, request.getRole());</span>
+<span class="nc" id="L73">            role = Role.STUDENT;</span>
+<span class="nc" id="L74">        }</span>
 
-<span class="nc" id="L71">        User user = User.builder()</span>
-<span class="nc" id="L72">                .username(request.getUsername())</span>
-<span class="nc" id="L73">                .email(request.getEmail())</span>
-<span class="nc" id="L74">                .password(passwordEncoder.encode(request.getPassword()))</span>
-<span class="nc" id="L75">                .role(role)</span>
-<span class="nc" id="L76">                .build();</span>
+<span class="nc" id="L76">        User user = User.builder()</span>
+<span class="nc" id="L77">                .username(request.getUsername())</span>
+<span class="nc" id="L78">                .email(request.getEmail())</span>
+<span class="nc" id="L79">                .password(passwordEncoder.encode(request.getPassword()))</span>
+<span class="nc" id="L80">                .role(role)</span>
+<span class="nc" id="L81">                .build();</span>
 
-<span class="nc" id="L78">        userRepository.save(user);</span>
-<span class="nc" id="L79">        logger.info(&quot;User registered successfully: {}&quot;, user.getUsername());</span>
+<span class="nc" id="L83">        userRepository.save(user);</span>
+<span class="nc" id="L84">        logger.info(&quot;User registered successfully: {}&quot;, user.getUsername());</span>
 
-<span class="nc" id="L81">        String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());</span>
+<span class="nc" id="L86">        String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());</span>
 
-<span class="nc" id="L83">        return AuthResponse.builder()</span>
-<span class="nc" id="L84">                .token(token)</span>
-<span class="nc" id="L85">                .username(user.getUsername())</span>
-<span class="nc" id="L86">                .role(user.getRole().name())</span>
-<span class="nc" id="L87">                .message(&quot;User registered successfully&quot;)</span>
-<span class="nc" id="L88">                .build();</span>
+        // Send Audit Log
+<span class="nc" id="L89">        sendAuditLog(user.getUsername(), user.getRole().name(), &quot;REGISTER&quot;, </span>
+<span class="nc" id="L90">                &quot;User registered with email: &quot; + user.getEmail(), </span>
+                &quot;New user registration&quot;);
+
+<span class="nc" id="L93">        return AuthResponse.builder()</span>
+<span class="nc" id="L94">                .token(token)</span>
+<span class="nc" id="L95">                .username(user.getUsername())</span>
+<span class="nc" id="L96">                .role(user.getRole().name())</span>
+<span class="nc" id="L97">                .message(&quot;User registered successfully&quot;)</span>
+<span class="nc" id="L98">                .build();</span>
     }
 
     /**
@@ -95,28 +105,33 @@ public class AuthService {
      * @return an AuthResponse containing the JWT token and user details
      */
     public AuthResponse login(LoginRequest request) {
-<span class="nc" id="L98">        logger.info(&quot;Attempting login for user: {}&quot;, request.getUsername());</span>
+<span class="nc" id="L108">        logger.info(&quot;Attempting login for email: {}&quot;, request.getEmail());</span>
 
-<span class="nc" id="L100">        Authentication authentication = authenticationManager.authenticate(</span>
+<span class="nc" id="L110">        Authentication authentication = authenticationManager.authenticate(</span>
                 new UsernamePasswordAuthenticationToken(
-<span class="nc" id="L102">                        request.getUsername(),</span>
-<span class="nc" id="L103">                        request.getPassword()</span>
+<span class="nc" id="L112">                        request.getEmail(),</span>
+<span class="nc" id="L113">                        request.getPassword()</span>
                 )
         );
 
-<span class="nc" id="L107">        logger.info(&quot;User authenticated successfully: {}&quot;, request.getUsername());</span>
+<span class="nc" id="L117">        logger.info(&quot;User authenticated successfully with email: {}&quot;, request.getEmail());</span>
 
-<span class="nc" id="L109">        User user = userRepository.findByUsername(request.getUsername())</span>
-<span class="nc" id="L110">                .orElseThrow(() -&gt; new RuntimeException(&quot;User not found: &quot; + request.getUsername()));</span>
+<span class="nc" id="L119">        User user = userRepository.findByEmail(request.getEmail())</span>
+<span class="nc" id="L120">                .orElseThrow(() -&gt; new RuntimeException(&quot;User not found: &quot; + request.getEmail()));</span>
 
-<span class="nc" id="L112">        String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());</span>
+<span class="nc" id="L122">        String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());</span>
 
-<span class="nc" id="L114">        return AuthResponse.builder()</span>
-<span class="nc" id="L115">                .token(token)</span>
-<span class="nc" id="L116">                .username(user.getUsername())</span>
-<span class="nc" id="L117">                .role(user.getRole().name())</span>
-<span class="nc" id="L118">                .message(&quot;Login successful&quot;)</span>
-<span class="nc" id="L119">                .build();</span>
+        // Send Audit Log
+<span class="nc" id="L125">        sendAuditLog(user.getUsername(), user.getRole().name(), &quot;LOGIN&quot;, </span>
+<span class="nc" id="L126">                &quot;User logged in with email: &quot; + request.getEmail(), </span>
+                &quot;Successful authentication&quot;);
+
+<span class="nc" id="L129">        return AuthResponse.builder()</span>
+<span class="nc" id="L130">                .token(token)</span>
+<span class="nc" id="L131">                .username(user.getUsername())</span>
+<span class="nc" id="L132">                .role(user.getRole().name())</span>
+<span class="nc" id="L133">                .message(&quot;Login successful&quot;)</span>
+<span class="nc" id="L134">                .build();</span>
     }
 
     /**
@@ -126,7 +141,7 @@ public class AuthService {
      * @return true if the token is valid, false otherwise
      */
     public boolean validateToken(String token) {
-<span class="nc" id="L129">        return jwtUtil.validateToken(token);</span>
+<span class="nc" id="L144">        return jwtUtil.validateToken(token);</span>
     }
 
     /**
@@ -137,9 +152,28 @@ public class AuthService {
      * @throws RuntimeException if the user is not found
      */
     public String getUserEmail(String username) {
-<span class="nc" id="L140">        User user = userRepository.findByUsername(username)</span>
-<span class="nc" id="L141">                .orElseThrow(() -&gt; new RuntimeException(&quot;User not found: &quot; + username));</span>
-<span class="nc" id="L142">        return user.getEmail();</span>
+<span class="nc" id="L155">        User user = userRepository.findByUsername(username)</span>
+<span class="nc" id="L156">                .orElseThrow(() -&gt; new RuntimeException(&quot;User not found: &quot; + username));</span>
+<span class="nc" id="L157">        return user.getEmail();</span>
     }
+
+    /**
+     * Helper to send audit logs to request-service asynchronously.
+     */
+    private void sendAuditLog(String username, String role, String action, String details, String reason) {
+        try {
+<span class="nc" id="L165">            RestTemplate restTemplate = new RestTemplate();</span>
+<span class="nc" id="L166">            java.util.Map&lt;String, String&gt; payload = java.util.Map.of(</span>
+                    &quot;username&quot;, username,
+                    &quot;role&quot;, role,
+                    &quot;action&quot;, action,
+                    &quot;details&quot;, details,
+                    &quot;reason&quot;, reason
+            );
+<span class="nc" id="L173">            restTemplate.postForEntity(requestServiceUrl + &quot;/api/requests/audit-logs&quot;, payload, Void.class);</span>
+<span class="nc" id="L174">        } catch (Exception e) {</span>
+<span class="nc" id="L175">            logger.error(&quot;Failed to send audit log to request-service: {}&quot;, e.getMessage());</span>
+<span class="nc" id="L176">        }</span>
+<span class="nc" id="L177">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

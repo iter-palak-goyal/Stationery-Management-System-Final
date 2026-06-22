@@ -5,12 +5,15 @@ import com.stationery.request.client.InventoryClient;
 import com.stationery.request.dto.CreateRequestDto;
 import com.stationery.request.dto.RequestItemDto;
 import com.stationery.request.dto.RequestResponse;
+import com.stationery.request.dto.AuditLogRequest;
 import com.stationery.request.exception.InsufficientStockException;
 import com.stationery.request.exception.ResourceNotFoundException;
 import com.stationery.request.model.RequestItem;
 import com.stationery.request.model.RequestStatus;
 import com.stationery.request.model.StationeryRequest;
+import com.stationery.request.model.AuditLog;
 import com.stationery.request.repository.RequestRepository;
+import com.stationery.request.repository.AuditLogRepository;
 import feign.FeignException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,15 +32,18 @@ public class RequestService {
     private final InventoryClient inventoryClient;
     private final AuthClient authClient;
     private final EmailService emailService;
+    private final AuditLogRepository auditLogRepository;
 
     public RequestService(RequestRepository requestRepository,
                           InventoryClient inventoryClient,
                           AuthClient authClient,
-                          EmailService emailService) {
+                          EmailService emailService,
+                          AuditLogRepository auditLogRepository) {
         this.requestRepository = requestRepository;
         this.inventoryClient = inventoryClient;
         this.authClient = authClient;
         this.emailService = emailService;
+        this.auditLogRepository = auditLogRepository;
     }
 
     /**
@@ -65,6 +71,20 @@ public class RequestService {
         StationeryRequest savedRequest = requestRepository.save(request);
         log.info("AUDIT: Stationery request created successfully. RequestId: {}, Student: {}, Items: {}",
                 savedRequest.getRequestId(), username, createRequestDto.getItems().size());
+
+        // Create Audit Log
+        String itemsStr = createRequestDto.getItems().stream()
+                .map(item -> item.getItemName() + " (x" + item.getQuantity() + ")")
+                .collect(Collectors.joining(", "));
+        AuditLog auditLog = AuditLog.builder()
+                .username(username)
+                .role("STUDENT")
+                .action("CREATE_REQUEST")
+                .requestId(savedRequest.getRequestId())
+                .details("Submitted stationery request for: " + itemsStr)
+                .reason("Student submitted request for stationery items.")
+                .build();
+        auditLogRepository.save(auditLog);
 
         sendStatusNotification(savedRequest);
 
@@ -182,6 +202,20 @@ public class RequestService {
         log.info("AUDIT: Request ID: {} approved by admin '{}'. All inventory deductions successful.",
                 id, adminUsername);
 
+        // Create Audit Log
+        String itemsStr = request.getItems().stream()
+                .map(item -> item.getItemName() + " (x" + item.getQuantity() + ")")
+                .collect(Collectors.joining(", "));
+        AuditLog auditLog = AuditLog.builder()
+                .username(adminUsername)
+                .role("ADMIN")
+                .action("APPROVE_REQUEST")
+                .requestId(request.getRequestId())
+                .details("Approved request containing: " + itemsStr)
+                .reason("Request approved and stationery items deducted from stock.")
+                .build();
+        auditLogRepository.save(auditLog);
+
         sendStatusNotification(savedRequest);
 
         return mapToResponse(savedRequest);
@@ -209,6 +243,17 @@ public class RequestService {
 
         log.info("AUDIT: Request ID: {} rejected by admin '{}'.", id, adminUsername);
 
+        // Create Audit Log
+        AuditLog auditLog = AuditLog.builder()
+                .username(adminUsername)
+                .role("ADMIN")
+                .action("REJECT_REQUEST")
+                .requestId(request.getRequestId())
+                .details("Rejected request.")
+                .reason(reason)
+                .build();
+        auditLogRepository.save(auditLog);
+
         sendStatusNotification(savedRequest);
 
         return mapToResponse(savedRequest);
@@ -218,7 +263,7 @@ public class RequestService {
      * Fulfill a request: change status from APPROVED to FULFILLED.
      */
     @Transactional
-    public RequestResponse fulfillRequest(Long id) {
+    public RequestResponse fulfillRequest(Long id, String adminUsername) {
         log.info("AUDIT: Fulfilling request ID: {}", id);
 
         StationeryRequest request = requestRepository.findById(id)
@@ -230,13 +275,49 @@ public class RequestService {
         }
 
         request.setStatus(RequestStatus.FULFILLED);
+        request.setAdminUsername(adminUsername);
         StationeryRequest savedRequest = requestRepository.save(request);
 
         log.info("AUDIT: Request ID: {} fulfilled successfully.", id);
 
+        // Create Audit Log
+        AuditLog auditLog = AuditLog.builder()
+                .username(adminUsername)
+                .role("ADMIN")
+                .action("FULFILL_REQUEST")
+                .requestId(request.getRequestId())
+                .details("Fulfilled request.")
+                .reason("Request items handed over to student.")
+                .build();
+        auditLogRepository.save(auditLog);
+
         sendStatusNotification(savedRequest);
 
         return mapToResponse(savedRequest);
+    }
+
+    /**
+     * Get all audit logs (Admin only).
+     */
+    @Transactional(readOnly = true)
+    public List<AuditLog> getAuditLogs() {
+        return auditLogRepository.findAllByOrderByActionDateDesc();
+    }
+
+    /**
+     * Create an external audit log (e.g. from inventory or authentication).
+     */
+    @Transactional
+    public void createAuditLog(AuditLogRequest dto) {
+        AuditLog auditLog = AuditLog.builder()
+                .username(dto.getUsername())
+                .role(dto.getRole())
+                .action(dto.getAction())
+                .requestId(dto.getRequestId())
+                .details(dto.getDetails())
+                .reason(dto.getReason())
+                .build();
+        auditLogRepository.save(auditLog);
     }
 
     // ========== Helper Methods ==========
@@ -245,28 +326,28 @@ public class RequestService {
         String username = request.getStudentUsername();
         String status = request.getStatus().name();
         String requestId = request.getRequestId();
-        
+
         try {
             log.info("Attempting to fetch email for student '{}' via auth-service", username);
             String email = authClient.getUserEmail(username);
             if (email != null && !email.isBlank()) {
                 String subject = String.format("Stationery Request #%s Status Update", requestId);
-                
+
                 StringBuilder body = new StringBuilder();
                 body.append("Dear ").append(username).append(",\n\n");
                 body.append("Your stationery request #").append(requestId).append(" status has changed to: ").append(status).append(".\n\n");
-                
+
                 if (request.getStatus() == RequestStatus.REJECTED && request.getRejectionReason() != null) {
                     body.append("Reason for rejection: ").append(request.getRejectionReason()).append("\n\n");
                 }
-                
+
                 if (request.getStatus() == RequestStatus.APPROVED && request.getAdminUsername() != null) {
                     body.append("Approved by: ").append(request.getAdminUsername()).append("\n\n");
                 }
-                
+
                 body.append("Best regards,\n");
                 body.append("Stationery Management System Team");
-                
+
                 emailService.sendNotification(email, subject, body.toString());
             } else {
                 log.warn("Fetched email for user '{}' is blank, skipping notification.", username);

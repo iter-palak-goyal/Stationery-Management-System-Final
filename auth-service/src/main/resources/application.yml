@@ -1,3 +1,4 @@
+#root block for complete spring.
 spring:
   application:
     name: auth-service

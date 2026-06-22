@@ -1,31 +1,41 @@
 package com.stationery.auth.model;
+// package declaration
 
+//import tools for database mapping, data validation and timestamps.
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
 
+//this class represents a table in db with the name "users"
 @Entity
 @Table(name = "users")
 public class User {
 
+    //mark this variable as primary key of table
     @Id
+    //tell mysql auto increment the id value when a new record is inserted
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    //tell mysql that this column cant be null and must be unique.
     @Column(nullable = false, unique = true)
+    //validate that this field is not blank when creating or updating a user
     @NotBlank(message = "Username is required")
     private String username;
 
+    //@Email - automatically checks if string has an @ symbol and .com domain.
     @Column(nullable = false, unique = true)
     @NotBlank(message = "Email is required")
     @Email(message = "Email should be valid")
     private String email;
 
+    //stores user's password (not hashed).
     @Column(nullable = false)
     @NotBlank(message = "Password is required")
     private String password;
 
+    //by default java saves enums as integer in db. we want to save it as string for better readability. 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
@@ -36,8 +46,10 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    //empty constructor is required by JPA to create instances of this class when fetching data from the database.
     public User() {}
 
+    //full constructor, used to create a user with all data filled at once.
     public User(Long id, String username, String email, String password, Role role, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.username = username;
@@ -48,6 +60,7 @@ public class User {
         this.updatedAt = updatedAt;
     }
 
+    //getters and setters for all fields, used to access and modify the private variables of this class.
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -69,12 +82,14 @@ public class User {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
+    //a database trigger, whenever a new user is created, it automatically sets the createdAt and updatedAt fields to the current date and time.
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 
+    //this method is called before updating a user, it automatically updates the updatedAt field to the current date and time.
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();

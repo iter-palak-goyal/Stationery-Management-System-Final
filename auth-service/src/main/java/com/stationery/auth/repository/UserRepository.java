@@ -6,10 +6,11 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-/**
- * JPA Repository for User entity operations.
- */
+
+ //JPA Repository for User entity operations. this interface is used to talk to db.
 @Repository
+
+//an interface. using JPARepository, spring auto generate all std db code - save, delete. fidbyid, findall...
 public interface UserRepository extends JpaRepository<User, Long> {
 
     /**

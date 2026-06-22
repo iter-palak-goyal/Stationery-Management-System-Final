@@ -3,21 +3,15 @@
 import com.stationery.request.dto.ApproveRejectDto;
 import com.stationery.request.dto.CreateRequestDto;
 import com.stationery.request.dto.RequestResponse;
+import com.stationery.request.dto.AuditLogRequest;
+import com.stationery.request.model.AuditLog;
 import com.stationery.request.service.RequestService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -25,13 +19,13 @@ import java.util.List;
 @RequestMapping(&quot;/api/requests&quot;)
 public class RequestController {
 
-<span class="nc" id="L28">    private static final Logger log = LoggerFactory.getLogger(RequestController.class);</span>
+<span class="nc" id="L22">    private static final Logger log = LoggerFactory.getLogger(RequestController.class);</span>
 
     private final RequestService requestService;
 
-<span class="nc" id="L32">    public RequestController(RequestService requestService) {</span>
-<span class="nc" id="L33">        this.requestService = requestService;</span>
-<span class="nc" id="L34">    }</span>
+<span class="nc" id="L26">    public RequestController(RequestService requestService) {</span>
+<span class="nc" id="L27">        this.requestService = requestService;</span>
+<span class="nc" id="L28">    }</span>
 
     /**
      * Create a new stationery request (STUDENT only).
@@ -43,11 +37,11 @@ public class RequestController {
             @RequestHeader(&quot;X-User-Role&quot;) String role,
             @Valid @RequestBody CreateRequestDto createRequestDto) {
 
-<span class="nc" id="L46">        log.info(&quot;AUDIT: POST /api/requests - User: {}, Role: {}&quot;, username, role);</span>
-<span class="nc" id="L47">        validateRole(role, &quot;STUDENT&quot;);</span>
+<span class="nc" id="L40">        log.info(&quot;AUDIT: POST /api/requests - User: {}, Role: {}&quot;, username, role);</span>
+<span class="nc" id="L41">        validateRole(role, &quot;STUDENT&quot;);</span>
 
-<span class="nc" id="L49">        RequestResponse response = requestService.createRequest(username, createRequestDto);</span>
-<span class="nc" id="L50">        return new ResponseEntity&lt;&gt;(response, HttpStatus.CREATED);</span>
+<span class="nc" id="L43">        RequestResponse response = requestService.createRequest(username, createRequestDto);</span>
+<span class="nc" id="L44">        return new ResponseEntity&lt;&gt;(response, HttpStatus.CREATED);</span>
     }
 
     /**
@@ -60,15 +54,15 @@ public class RequestController {
             @RequestHeader(&quot;X-User-Name&quot;) String username,
             @RequestParam(value = &quot;status&quot;, required = false) String status) {
 
-<span class="nc" id="L63">        log.info(&quot;AUDIT: GET /api/requests/my - User: {}, Status filter: {}&quot;, username, status);</span>
+<span class="nc" id="L57">        log.info(&quot;AUDIT: GET /api/requests/my - User: {}, Status filter: {}&quot;, username, status);</span>
 
         List&lt;RequestResponse&gt; responses;
-<span class="nc bnc" id="L66" title="All 4 branches missed.">        if (status != null &amp;&amp; !status.isEmpty()) {</span>
-<span class="nc" id="L67">            responses = requestService.getRequestsByStudentAndStatus(username, status);</span>
-        } else {
-<span class="nc" id="L69">            responses = requestService.getRequestsByStudent(username);</span>
+<span class="nc bnc" id="L60" title="All 4 branches missed.">        if (status != null &amp;&amp; !status.isEmpty()) {</span>
+<span class="nc" id="L61">            responses = requestService.getRequestsByStudentAndStatus(username, status);</span>
+<span class="nc" id="L62">        } else {</span>
+<span class="nc" id="L63">            responses = requestService.getRequestsByStudent(username);</span>
         }
-<span class="nc" id="L71">        return ResponseEntity.ok(responses);</span>
+<span class="nc" id="L65">        return ResponseEntity.ok(responses);</span>
     }
 
     /**
@@ -77,9 +71,9 @@ public class RequestController {
      */
     @GetMapping(&quot;/{id}&quot;)
     public ResponseEntity&lt;RequestResponse&gt; getRequestById(@PathVariable Long id) {
-<span class="nc" id="L80">        log.info(&quot;AUDIT: GET /api/requests/{} - Fetching request by ID&quot;, id);</span>
-<span class="nc" id="L81">        RequestResponse response = requestService.getRequestById(id);</span>
-<span class="nc" id="L82">        return ResponseEntity.ok(response);</span>
+<span class="nc" id="L74">        log.info(&quot;AUDIT: GET /api/requests/{} - Fetching request by ID&quot;, id);</span>
+<span class="nc" id="L75">        RequestResponse response = requestService.getRequestById(id);</span>
+<span class="nc" id="L76">        return ResponseEntity.ok(response);</span>
     }
 
     /**
@@ -88,9 +82,9 @@ public class RequestController {
      */
     @GetMapping(&quot;/track/{requestId}&quot;)
     public ResponseEntity&lt;RequestResponse&gt; getRequestByRequestId(@PathVariable String requestId) {
-<span class="nc" id="L91">        log.info(&quot;AUDIT: GET /api/requests/track/{} - Tracking request&quot;, requestId);</span>
-<span class="nc" id="L92">        RequestResponse response = requestService.getRequestByRequestId(requestId);</span>
-<span class="nc" id="L93">        return ResponseEntity.ok(response);</span>
+<span class="nc" id="L85">        log.info(&quot;AUDIT: GET /api/requests/track/{} - Tracking request&quot;, requestId);</span>
+<span class="nc" id="L86">        RequestResponse response = requestService.getRequestByRequestId(requestId);</span>
+<span class="nc" id="L87">        return ResponseEntity.ok(response);</span>
     }
 
     /**
@@ -103,16 +97,16 @@ public class RequestController {
             @RequestHeader(&quot;X-User-Role&quot;) String role,
             @RequestParam(value = &quot;status&quot;, required = false) String status) {
 
-<span class="nc" id="L106">        log.info(&quot;AUDIT: GET /api/requests - Role: {}, Status filter: {}&quot;, role, status);</span>
-<span class="nc" id="L107">        validateRole(role, &quot;ADMIN&quot;);</span>
+<span class="nc" id="L100">        log.info(&quot;AUDIT: GET /api/requests - Role: {}, Status filter: {}&quot;, role, status);</span>
+<span class="nc" id="L101">        validateRole(role, &quot;ADMIN&quot;);</span>
 
         List&lt;RequestResponse&gt; responses;
-<span class="nc bnc" id="L110" title="All 4 branches missed.">        if (status != null &amp;&amp; !status.isEmpty()) {</span>
-<span class="nc" id="L111">            responses = requestService.getAllRequestsByStatus(status);</span>
-        } else {
-<span class="nc" id="L113">            responses = requestService.getAllRequests();</span>
+<span class="nc bnc" id="L104" title="All 4 branches missed.">        if (status != null &amp;&amp; !status.isEmpty()) {</span>
+<span class="nc" id="L105">            responses = requestService.getAllRequestsByStatus(status);</span>
+<span class="nc" id="L106">        } else {</span>
+<span class="nc" id="L107">            responses = requestService.getAllRequests();</span>
         }
-<span class="nc" id="L115">        return ResponseEntity.ok(responses);</span>
+<span class="nc" id="L109">        return ResponseEntity.ok(responses);</span>
     }
 
     /**
@@ -125,11 +119,11 @@ public class RequestController {
             @RequestHeader(&quot;X-User-Name&quot;) String adminUsername,
             @RequestHeader(&quot;X-User-Role&quot;) String role) {
 
-<span class="nc" id="L128">        log.info(&quot;AUDIT: PUT /api/requests/{}/approve - Admin: {}, Role: {}&quot;, id, adminUsername, role);</span>
-<span class="nc" id="L129">        validateRole(role, &quot;ADMIN&quot;);</span>
+<span class="nc" id="L122">        log.info(&quot;AUDIT: PUT /api/requests/{}/approve - Admin: {}, Role: {}&quot;, id, adminUsername, role);</span>
+<span class="nc" id="L123">        validateRole(role, &quot;ADMIN&quot;);</span>
 
-<span class="nc" id="L131">        RequestResponse response = requestService.approveRequest(id, adminUsername);</span>
-<span class="nc" id="L132">        return ResponseEntity.ok(response);</span>
+<span class="nc" id="L125">        RequestResponse response = requestService.approveRequest(id, adminUsername);</span>
+<span class="nc" id="L126">        return ResponseEntity.ok(response);</span>
     }
 
     /**
@@ -143,12 +137,12 @@ public class RequestController {
             @RequestHeader(&quot;X-User-Role&quot;) String role,
             @RequestBody(required = false) ApproveRejectDto approveRejectDto) {
 
-<span class="nc" id="L146">        log.info(&quot;AUDIT: PUT /api/requests/{}/reject - Admin: {}, Role: {}&quot;, id, adminUsername, role);</span>
-<span class="nc" id="L147">        validateRole(role, &quot;ADMIN&quot;);</span>
+<span class="nc" id="L140">        log.info(&quot;AUDIT: PUT /api/requests/{}/reject - Admin: {}, Role: {}&quot;, id, adminUsername, role);</span>
+<span class="nc" id="L141">        validateRole(role, &quot;ADMIN&quot;);</span>
 
-<span class="nc bnc" id="L149" title="All 2 branches missed.">        String reason = (approveRejectDto != null) ? approveRejectDto.getRejectionReason() : null;</span>
-<span class="nc" id="L150">        RequestResponse response = requestService.rejectRequest(id, adminUsername, reason);</span>
-<span class="nc" id="L151">        return ResponseEntity.ok(response);</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        String reason = (approveRejectDto != null) ? approveRejectDto.getRejectionReason() : null;</span>
+<span class="nc" id="L144">        RequestResponse response = requestService.rejectRequest(id, adminUsername, reason);</span>
+<span class="nc" id="L145">        return ResponseEntity.ok(response);</span>
     }
 
     /**
@@ -158,13 +152,40 @@ public class RequestController {
     @PutMapping(&quot;/{id}/fulfill&quot;)
     public ResponseEntity&lt;RequestResponse&gt; fulfillRequest(
             @PathVariable Long id,
+            @RequestHeader(&quot;X-User-Name&quot;) String adminUsername,
             @RequestHeader(&quot;X-User-Role&quot;) String role) {
 
-<span class="nc" id="L163">        log.info(&quot;AUDIT: PUT /api/requests/{}/fulfill - Role: {}&quot;, id, role);</span>
-<span class="nc" id="L164">        validateRole(role, &quot;ADMIN&quot;);</span>
+<span class="nc" id="L158">        log.info(&quot;AUDIT: PUT /api/requests/{}/fulfill - Admin: {}, Role: {}&quot;, id, adminUsername, role);</span>
+<span class="nc" id="L159">        validateRole(role, &quot;ADMIN&quot;);</span>
 
-<span class="nc" id="L166">        RequestResponse response = requestService.fulfillRequest(id);</span>
-<span class="nc" id="L167">        return ResponseEntity.ok(response);</span>
+<span class="nc" id="L161">        RequestResponse response = requestService.fulfillRequest(id, adminUsername);</span>
+<span class="nc" id="L162">        return ResponseEntity.ok(response);</span>
+    }
+
+    /**
+     * Get all audit logs (ADMIN only).
+     * GET /api/requests/audit-logs
+     */
+    @GetMapping(&quot;/audit-logs&quot;)
+    public ResponseEntity&lt;List&lt;AuditLog&gt;&gt; getAuditLogs(
+            @RequestHeader(&quot;X-User-Role&quot;) String role) {
+<span class="nc" id="L172">        log.info(&quot;AUDIT: GET /api/requests/audit-logs - Role: {}&quot;, role);</span>
+<span class="nc" id="L173">        validateRole(role, &quot;ADMIN&quot;);</span>
+<span class="nc" id="L174">        List&lt;AuditLog&gt; logs = requestService.getAuditLogs();</span>
+<span class="nc" id="L175">        return ResponseEntity.ok(logs);</span>
+    }
+
+    /**
+     * Create an external audit log (e.g. from inventory or auth services).
+     * POST /api/requests/audit-logs
+     */
+    @PostMapping(&quot;/audit-logs&quot;)
+    public ResponseEntity&lt;Void&gt; createAuditLog(
+            @RequestBody @Valid AuditLogRequest auditLogRequest) {
+<span class="nc" id="L185">        log.info(&quot;AUDIT: POST /api/requests/audit-logs - User: {}, Action: {}&quot;,</span>
+<span class="nc" id="L186">                auditLogRequest.getUsername(), auditLogRequest.getAction());</span>
+<span class="nc" id="L187">        requestService.createAuditLog(auditLogRequest);</span>
+<span class="nc" id="L188">        return ResponseEntity.status(HttpStatus.CREATED).build();</span>
     }
 
     // ========== Helper Methods ==========
@@ -173,10 +194,10 @@ public class RequestController {
      * Validate that the user has the required role.
      */
     private void validateRole(String actualRole, String requiredRole) {
-<span class="nc bnc" id="L176" title="All 4 branches missed.">        if (actualRole == null || !actualRole.equalsIgnoreCase(requiredRole)) {</span>
-<span class="nc" id="L177">            throw new IllegalArgumentException(</span>
-                    &quot;Access denied. Required role: &quot; + requiredRole + &quot;, but got: &quot; + actualRole);
+<span class="nc bnc" id="L197" title="All 4 branches missed.">        if (actualRole == null || !actualRole.equalsIgnoreCase(requiredRole)) {</span>
+<span class="nc" id="L198">            throw new IllegalArgumentException(</span>
+<span class="nc" id="L199">                    &quot;Access denied. Required role: &quot; + requiredRole + &quot;, but got: &quot; + actualRole);</span>
         }
-<span class="nc" id="L180">    }</span>
+<span class="nc" id="L201">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

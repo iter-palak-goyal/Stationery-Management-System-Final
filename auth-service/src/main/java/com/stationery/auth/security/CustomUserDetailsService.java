@@ -24,19 +24,20 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     /**
-     * Loads a user by username from the database and converts it to a Spring Security UserDetails object.
+     * Loads a user by email (mapping to Spring Security's 'username' concept)
+     * from the database and converts it to a Spring Security UserDetails object.
      *
-     * @param username the username to look up
+     * @param email the email to look up
      * @return the UserDetails for authentication
-     * @throws UsernameNotFoundException if no user is found with the given username
+     * @throws UsernameNotFoundException if no user is found with the given email
      */
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
         return new org.springframework.security.core.userdetails.User(
-                user.getUsername(),
+                user.getEmail(),
                 user.getPassword(),
                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
         );

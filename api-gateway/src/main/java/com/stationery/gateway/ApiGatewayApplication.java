@@ -1,4 +1,5 @@
 package com.stationery.gateway;
+//package declaration
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -13,6 +14,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
  * </p>
  */
 @SpringBootApplication
+// register this service with the discovery server (Eureka)
 @EnableDiscoveryClient
 public class ApiGatewayApplication {
 

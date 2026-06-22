@@ -16,10 +16,12 @@ import java.util.stream.Collectors;
  * Global exception handler for the Auth Service.
  * Catches and transforms exceptions into standardized ErrorResponse objects.
  */
-@RestControllerAdvice
-<span class="nc" id="L20">public class GlobalExceptionHandler {</span>
 
-<span class="nc" id="L22">    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);</span>
+//the global interceptor. tells spring to wrap this entire app in a giant invisible try/catch block.
+@RestControllerAdvice
+<span class="nc" id="L22">public class GlobalExceptionHandler {</span>
+
+<span class="nc" id="L24">    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);</span>
 
     /**
      * Handles generic RuntimeExceptions (e.g., duplicate username/email).
@@ -27,17 +29,19 @@ import java.util.stream.Collectors;
      * @param ex the RuntimeException
      * @return ResponseEntity with error details and 400 status
      */
+
+    //tell spring, if anyone throws a std java run time exception, route it to this method.
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity&lt;ErrorResponse&gt; handleRuntimeException(RuntimeException ex) {
-<span class="nc" id="L32">        logger.error(&quot;RuntimeException occurred: {}&quot;, ex.getMessage());</span>
+<span class="nc" id="L36">        logger.error(&quot;RuntimeException occurred: {}&quot;, ex.getMessage());</span>
 
-<span class="nc" id="L34">        ErrorResponse errorResponse = ErrorResponse.builder()</span>
-<span class="nc" id="L35">                .status(HttpStatus.BAD_REQUEST.value())</span>
-<span class="nc" id="L36">                .message(ex.getMessage())</span>
-<span class="nc" id="L37">                .timestamp(LocalDateTime.now())</span>
-<span class="nc" id="L38">                .build();</span>
+<span class="nc" id="L38">        ErrorResponse errorResponse = ErrorResponse.builder()</span>
+<span class="nc" id="L39">                .status(HttpStatus.BAD_REQUEST.value())</span>
+<span class="nc" id="L40">                .message(ex.getMessage())</span>
+<span class="nc" id="L41">                .timestamp(LocalDateTime.now())</span>
+<span class="nc" id="L42">                .build();</span>
 
-<span class="nc" id="L40">        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);</span>
+<span class="nc" id="L44">        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);</span>
     }
 
     /**
@@ -48,19 +52,19 @@ import java.util.stream.Collectors;
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity&lt;ErrorResponse&gt; handleValidationException(MethodArgumentNotValidException ex) {
-<span class="nc" id="L51">        logger.error(&quot;Validation error occurred: {}&quot;, ex.getMessage());</span>
+<span class="nc" id="L55">        logger.error(&quot;Validation error occurred: {}&quot;, ex.getMessage());</span>
 
-<span class="nc" id="L53">        String errorMessages = ex.getBindingResult().getFieldErrors().stream()</span>
-<span class="nc" id="L54">                .map(error -&gt; error.getField() + &quot;: &quot; + error.getDefaultMessage())</span>
-<span class="nc" id="L55">                .collect(Collectors.joining(&quot;, &quot;));</span>
+<span class="nc" id="L57">        String errorMessages = ex.getBindingResult().getFieldErrors().stream()</span>
+<span class="nc" id="L58">                .map(error -&gt; error.getField() + &quot;: &quot; + error.getDefaultMessage())</span>
+<span class="nc" id="L59">                .collect(Collectors.joining(&quot;, &quot;));</span>
 
-<span class="nc" id="L57">        ErrorResponse errorResponse = ErrorResponse.builder()</span>
-<span class="nc" id="L58">                .status(HttpStatus.BAD_REQUEST.value())</span>
-<span class="nc" id="L59">                .message(errorMessages)</span>
-<span class="nc" id="L60">                .timestamp(LocalDateTime.now())</span>
-<span class="nc" id="L61">                .build();</span>
+<span class="nc" id="L61">        ErrorResponse errorResponse = ErrorResponse.builder()</span>
+<span class="nc" id="L62">                .status(HttpStatus.BAD_REQUEST.value())</span>
+<span class="nc" id="L63">                .message(errorMessages)</span>
+<span class="nc" id="L64">                .timestamp(LocalDateTime.now())</span>
+<span class="nc" id="L65">                .build();</span>
 
-<span class="nc" id="L63">        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);</span>
+<span class="nc" id="L67">        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);</span>
     }
 
     /**
@@ -71,15 +75,15 @@ import java.util.stream.Collectors;
      */
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity&lt;ErrorResponse&gt; handleAuthenticationException(AuthenticationException ex) {
-<span class="nc" id="L74">        logger.error(&quot;Authentication error occurred: {}&quot;, ex.getMessage());</span>
+<span class="nc" id="L78">        logger.error(&quot;Authentication error occurred: {}&quot;, ex.getMessage());</span>
 
-<span class="nc" id="L76">        ErrorResponse errorResponse = ErrorResponse.builder()</span>
-<span class="nc" id="L77">                .status(HttpStatus.UNAUTHORIZED.value())</span>
-<span class="nc" id="L78">                .message(&quot;Authentication failed: &quot; + ex.getMessage())</span>
-<span class="nc" id="L79">                .timestamp(LocalDateTime.now())</span>
-<span class="nc" id="L80">                .build();</span>
+<span class="nc" id="L80">        ErrorResponse errorResponse = ErrorResponse.builder()</span>
+<span class="nc" id="L81">                .status(HttpStatus.UNAUTHORIZED.value())</span>
+<span class="nc" id="L82">                .message(&quot;Authentication failed: &quot; + ex.getMessage())</span>
+<span class="nc" id="L83">                .timestamp(LocalDateTime.now())</span>
+<span class="nc" id="L84">                .build();</span>
 
-<span class="nc" id="L82">        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);</span>
+<span class="nc" id="L86">        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

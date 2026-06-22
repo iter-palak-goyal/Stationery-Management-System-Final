@@ -1,4 +1,7 @@
 package com.stationery.auth.controller;
+// package declaration.
+
+// DTO - data transfer object.
 
 import com.stationery.auth.dto.AuthResponse;
 import com.stationery.auth.dto.LoginRequest;
@@ -49,9 +52,9 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        logger.info("Login request received for username: {}", request.getUsername());
+        logger.info("Login request received for email: {}", request.getEmail());
         AuthResponse response = authService.login(request);
-        logger.info("Login successful for username: {}", request.getUsername());
+        logger.info("Login successful for email: {}", request.getEmail());
         return ResponseEntity.ok(response);
     }
 

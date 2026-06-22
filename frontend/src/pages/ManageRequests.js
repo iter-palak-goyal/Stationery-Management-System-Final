@@ -5,6 +5,7 @@ import './Requests.css';
 const ManageRequests = () => {
   const [requests, setRequests] = useState([]);
   const [status, setStatus] = useState('');
+  const [sortBy, setSortBy] = useState('date-desc');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -71,26 +72,58 @@ const ManageRequests = () => {
     }
   };
 
+  // Client-side sorting for responsiveness
+  const sortedRequests = [...requests].sort((a, b) => {
+    if (sortBy === 'date-desc') {
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    } else if (sortBy === 'date-asc') {
+      return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+    } else if (sortBy === 'name-asc') {
+      const nameA = a.studentUsername || '';
+      const nameB = b.studentUsername || '';
+      return nameA.localeCompare(nameB);
+    } else if (sortBy === 'name-desc') {
+      const nameA = a.studentUsername || '';
+      const nameB = b.studentUsername || '';
+      return nameB.localeCompare(nameA);
+    }
+    return 0;
+  });
+
   return (
     <div className="page-card">
       <div className="page-header">
         <div>
           <h1>Manage Requests</h1>
-          <p className="page-subtitle">Approve, reject, or fulfill student requests.</p>
+          <p className="page-subtitle">Approve, reject, or fulfill student requests. Filter and sort below.</p>
         </div>
       </div>
 
-      <div className="request-filter">
-        <label>
-          Filter by status
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="">All</option>
-            <option value="PENDING">Pending</option>
-            <option value="APPROVED">Approved</option>
-            <option value="REJECTED">Rejected</option>
-            <option value="FULFILLED">Fulfilled</option>
-          </select>
-        </label>
+      <div className="filters-container" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+        <div className="request-filter" style={{ flex: '1', minWidth: '200px' }}>
+          <label>
+            <span>🔍 Filter by status</span>
+            <select value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="">All Statuses</option>
+              <option value="PENDING">Pending</option>
+              <option value="APPROVED">Approved</option>
+              <option value="REJECTED">Rejected</option>
+              <option value="FULFILLED">Fulfilled</option>
+            </select>
+          </label>
+        </div>
+
+        <div className="request-filter" style={{ flex: '1', minWidth: '200px' }}>
+          <label>
+            <span>↕️ Sort by</span>
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+              <option value="date-desc">Date (Newest First)</option>
+              <option value="date-asc">Date (Oldest First)</option>
+              <option value="name-asc">Student Name (A-Z)</option>
+              <option value="name-desc">Student Name (Z-A)</option>
+            </select>
+          </label>
+        </div>
       </div>
 
       {message && <div className="alert alert-success">{message}</div>}
@@ -102,25 +135,40 @@ const ManageRequests = () => {
             <tr>
               <th>ID</th>
               <th>Request ID</th>
-              <th>Student</th>
+              <th>Student Name</th>
               <th>Status</th>
-              <th>Items</th>
+              <th>Items Requested</th>
+              <th>Requested On</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {requests.length ? (
-              requests.map((request) => (
+            {sortedRequests.length ? (
+              sortedRequests.map((request) => (
                 <tr key={request.id}>
-                  <td>{request.id}</td>
-                  <td>{request.requestId}</td>
-                  <td>{request.studentUsername}</td>
+                  <td><strong>#{request.id}</strong></td>
+                  <td><code style={{ fontSize: '0.85rem' }}>{request.requestId}</code></td>
+                  <td><strong>{request.studentUsername}</strong></td>
                   <td>
                     <span className={`status-badge ${request.status.toLowerCase()}`}>
                       {request.status}
                     </span>
+                    {request.status === 'REJECTED' && request.rejectionReason && (
+                      <div style={{ marginTop: '0.5rem', fontSize: '0.82rem', color: '#f87171', maxWidth: '250px', lineBreak: 'anywhere' }}>
+                        <strong>Reason:</strong> {request.rejectionReason}
+                      </div>
+                    )}
                   </td>
-                  <td>{request.items?.map((item) => `${item.itemName} x${item.quantity}`).join(', ')}</td>
+                  <td>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      {request.items?.map((item, idx) => (
+                        <span key={idx} style={{ fontSize: '0.9rem' }}>
+                          📦 {item.itemName} <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>x{item.quantity}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td>{request.createdAt ? new Date(request.createdAt).toLocaleString() : '—'}</td>
                   <td className="action-cell">
                     {request.status === 'PENDING' && (
                       <>
@@ -143,7 +191,7 @@ const ManageRequests = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="empty-row">
+                <td colSpan="7" className="empty-row">
                   {loading ? 'Loading requests...' : 'No requests found.'}
                 </td>
               </tr>

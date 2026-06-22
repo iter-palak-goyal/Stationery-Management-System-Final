@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
  * Global exception handler for the Auth Service.
  * Catches and transforms exceptions into standardized ErrorResponse objects.
  */
+
+//the global interceptor. tells spring to wrap this entire app in a giant invisible try/catch block.
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -27,6 +29,8 @@ public class GlobalExceptionHandler {
      * @param ex the RuntimeException
      * @return ResponseEntity with error details and 400 status
      */
+
+    //tell spring, if anyone throws a std java run time exception, route it to this method.
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex) {
         logger.error("RuntimeException occurred: {}", ex.getMessage());
